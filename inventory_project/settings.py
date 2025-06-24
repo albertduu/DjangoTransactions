@@ -78,7 +78,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'Django_DB',
         'USER': 'Raider',
-        'PASSWORD': '******',
+        'PASSWORD': 'RaiderExtreme64!',
         'HOST': '54.189.197.53',
         'PORT': '3306',
         'OPTIONS': {
