@@ -37,8 +37,8 @@
         {% endfor %}
     </table>
 
-    <h2>Add New Transaction</h2>
-    <form method="POST" action="">
+    <h2>Add a new transaction</h2>
+    <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Submit</button>
