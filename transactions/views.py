@@ -1,18 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from .models import Transaction
-from .forms import TransactionForm
 
-def transaction_list_create(request):
-    if request.method == 'POST':
-        form = TransactionForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('transaction-list')
-    else:
-        form = TransactionForm()
-
+def transaction_list(request):
     transactions = Transaction.objects.all()
-    return render(request, 'transactions/index.html', {
-        'transactions': transactions,
-        'form': form
-    })
+    return render(request, 'transactions/list.html', {'transactions': transactions})
