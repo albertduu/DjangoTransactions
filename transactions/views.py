@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
-from .forms import TransactionForm
 from .models import Transaction
+from .forms import TransactionForm
 
 def transaction_list_create(request):
     if request.method == 'POST':
@@ -14,5 +14,5 @@ def transaction_list_create(request):
     transactions = Transaction.objects.all()
     return render(request, 'transactions/index.html', {
         'transactions': transactions,
-        'form': form,
+        'form': form
     })
