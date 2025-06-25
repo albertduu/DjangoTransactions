@@ -7,9 +7,12 @@ def transaction_list_create(request):
         form = TransactionForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('transaction-list')  # name of your URL route
+            return redirect('transaction-list')
     else:
         form = TransactionForm()
 
     transactions = Transaction.objects.all()
-    return render(request, 'transactions/index.html', {'transactions': transactions, 'form': form})
+    return render(request, 'transactions/index.html', {
+        'transactions': transactions,
+        'form': form,
+    })
