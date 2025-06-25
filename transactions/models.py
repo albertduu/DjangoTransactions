@@ -18,5 +18,8 @@ class Transaction(models.Model):
     trackings = models.TextField(null=True, blank=True)
     shipped = models.BooleanField(default=False)
 
+    class Meta:
+        db_table = 'transactions'
+
     def __str__(self):
         return f"{self.person_id or 'N/A'} - {self.product}"
