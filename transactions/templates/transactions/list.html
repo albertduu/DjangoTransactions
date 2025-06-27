@@ -32,7 +32,9 @@
 
         .modal-content {
             background-color: #fefefe;
-            margin: 10% auto;
+            position: relative;
+            top: 50px;
+            margin: 0 auto;
             padding: 20px;
             border: 1px solid #888;
             width: 400px;
@@ -51,11 +53,22 @@
         .close:hover {
             color: black;
         }
+
+        #openPopup {
+            margin: 20px 0;
+            padding: 8px 16px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <h1>Transaction List</h1>
 
+    <!-- Add Transaction Button -->
+    <button id="openPopup">Add Transaction</button>
+
+    <!-- Transaction Table -->
     <table>
         <tr>
             <th>Timestamp</th><th>Person ID</th><th>Email</th><th>Phone</th>
@@ -82,10 +95,7 @@
         {% endfor %}
     </table>
 
-    <!-- Button to open modal -->
-    <button id="openPopup">Add Transaction</button>
-
-    <!-- Modal Popup -->
+    <!-- Popup Modal Form -->
     <div id="popupForm" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -98,6 +108,7 @@
         </div>
     </div>
 
+    <!-- JavaScript to handle modal -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             var modal = document.getElementById("popupForm");
