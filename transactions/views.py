@@ -21,8 +21,8 @@ def transaction_list(request):
 def payments(request):
     payments = (
         Transaction.objects
-        .values('vendor')
-        .annotate(total_remaining=Sum('remaining'))
+        .values('person_id')
+        .annotate(total_remaining=Sum('payment'))
         .order_by('-total_remaining')
     )
     return render(request, 'transactions/payments.html', {'payments': payments})
