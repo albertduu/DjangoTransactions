@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Transaction
 from .forms import TransactionForm
+from django.db.models import Sum
 
 def transaction_list(request):
     if request.method == 'POST':
@@ -16,3 +17,12 @@ def transaction_list(request):
         'transactions': transactions,
         'form': form
     })
+
+def payments(request):
+    payments = (
+        Transaction.objects
+        .values('vendor')
+        .annotate(total_remaining=Sum('remaining'))
+        .order_by('-total_remaining')
+    )
+    return render(request, 'transactions/payments.html', {'payments': payments})
