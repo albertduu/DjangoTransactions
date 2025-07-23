@@ -19,9 +19,10 @@ def transaction_list(request):
     })
 
 def payments(request):
+    query = request.GET.get('person_id')  # get search input
     payments = (
         Transaction.objects
-        .values('person_id')  # group by person_id
+        .values('person_id')
         .annotate(
             total_payment=Sum(
                 ExpressionWrapper(
@@ -32,4 +33,8 @@ def payments(request):
         )
         .order_by('-total_payment')
     )
-    return render(request, 'transactions/payments.html', {'payments': payments})
+
+    if query:
+        payments = payments.filter(person_id__icontains=query)
+
+    return render(request, 'transactions/payments.html', {'payments': payments, 'query': query})

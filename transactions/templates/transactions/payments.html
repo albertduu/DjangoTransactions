@@ -1,4 +1,12 @@
-<table>
+<h1>Payments</h1>
+
+<form method="get">
+  <label for="person_id">Search Person ID:</label>
+  <input type="text" name="person_id" id="person_id" value="{{ query }}">
+  <button type="submit">Filter</button>
+</form>
+
+<table border="1">
   <thead>
     <tr>
       <th>Person ID</th>
@@ -11,6 +19,8 @@
         <td>{{ p.person_id }}</td>
         <td>{{ p.total_payment }}</td>
       </tr>
+    {% empty %}
+      <tr><td colspan="2">No results found.</td></tr>
     {% endfor %}
   </tbody>
 </table>
