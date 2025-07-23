@@ -8,14 +8,34 @@ def transaction_list(request):
         form = TransactionForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('transaction-list')  # avoid resubmission on refresh
+            return redirect('transaction-list')  # prevent resubmission on refresh
     else:
         form = TransactionForm()
-    
+
+    # FILTERS (from GET)
+    person_id = request.GET.get('person_id')
+    product = request.GET.get('product')
+    in_stock = request.GET.get('in_stock')
+    trackings = request.GET.get('trackings')
+
     transactions = Transaction.objects.all()
+
+    if person_id:
+        transactions = transactions.filter(person_id__icontains=person_id)
+    if product:
+        transactions = transactions.filter(product__icontains=product)
+    if in_stock:
+        transactions = transactions.filter(quantity__gt=0)
+    if trackings:
+        transactions = transactions.filter(trackings__icontains=trackings)
+
     return render(request, 'transactions/list.html', {
         'transactions': transactions,
-        'form': form
+        'form': form,
+        'person_id': person_id,
+        'product': product,
+        'in_stock': in_stock,
+        'trackings': trackings,
     })
 
 def payments(request):

@@ -60,10 +60,38 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        /* Filter form style */
+        #filterForm input[type="text"] {
+            display: inline;
+            margin-right: 10px;
+        }
+        #filterForm label {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Transaction List</h1>
+
+    <!-- ✅ FILTER FORM -->
+    <form id="filterForm" method="get">
+        <label for="person_id">Person ID:</label>
+        <input type="text" name="person_id" id="person_id" value="{{ person_id|default_if_none:'' }}">
+
+        <label for="product">Product:</label>
+        <input type="text" name="product" id="product" value="{{ product|default_if_none:'' }}">
+
+        <label for="trackings">Trackings:</label>
+        <input type="text" name="trackings" id="trackings" value="{{ trackings|default_if_none:'' }}">
+
+        <label>
+            <input type="checkbox" name="in_stock" value="1" {% if in_stock %}checked{% endif %}>
+            In Stock Only
+        </label>
+
+        <button type="submit">Filter</button>
+    </form>
 
     <!-- Add Transaction Button -->
     <button id="openPopup">Add Transaction</button>
@@ -92,6 +120,8 @@
             <td>{{ t.trackings }}</td>
             <td>{{ t.shipped }}</td>
         </tr>
+        {% empty %}
+        <tr><td colspan="14">No transactions found.</td></tr>
         {% endfor %}
     </table>
 
@@ -103,32 +133,4 @@
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit">Submit</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- JavaScript to handle modal -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var modal = document.getElementById("popupForm");
-            var btn = document.getElementById("openPopup");
-            var span = document.querySelector(".close");
-
-            btn.onclick = function () {
-                modal.style.display = "block";
-            }
-
-            span.onclick = function () {
-                modal.style.display = "none";
-            }
-
-            window.onclick = function (event) {
-                if (event.target == modal) {
-                    modal.style.display = "none";
-                }
-            }
-        });
-    </script>
-</body>
-</html>
+                <button type="
