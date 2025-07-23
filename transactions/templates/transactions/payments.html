@@ -1,25 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Payments</title>
-    <style>
-        table, th, td { border: 1px solid black; border-collapse: collapse; }
-        th, td { padding: 5px; }
-    </style>
-</head>
-<body>
-    <h1>Payments</h1>
-    <table>
-        <tr>
-            <th>Vendor</th>
-            <th>Remaining</th>
-        </tr>
-        {% for payment in payments %}
-            <tr>
-                <td>{{ payment.vendor }}</td>
-                <td>{{ payment.total_remaining }}</td>
-            </tr>
-        {% endfor %}
-    </table>
-</body>
-</html>
+<table>
+  <thead>
+    <tr>
+      <th>Person ID</th>
+      <th>Total Payment</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in payments %}
+      <tr>
+        <td>{{ p.person_id }}</td>
+        <td>{{ p.total_payment }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

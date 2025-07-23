@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Transaction
 from .forms import TransactionForm
-from django.db.models import Sum
+from django.db.models import F, Sum, ExpressionWrapper, FloatField
 
 def transaction_list(request):
     if request.method == 'POST':
@@ -21,8 +21,15 @@ def transaction_list(request):
 def payments(request):
     payments = (
         Transaction.objects
-        .values('person_id')
-        .annotate(total_remaining=Sum('payment'))
-        .order_by('-total_remaining')
+        .values('person_id')  # group by person_id
+        .annotate(
+            total_payment=Sum(
+                ExpressionWrapper(
+                    F('quantity') * F('price'),
+                    output_field=FloatField()
+                )
+            )
+        )
+        .order_by('-total_payment')
     )
     return render(request, 'transactions/payments.html', {'payments': payments})
