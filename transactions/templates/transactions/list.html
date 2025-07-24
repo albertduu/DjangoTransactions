@@ -18,7 +18,6 @@
             margin-bottom: 10px;
             display: block;
         }
-
         /* Modal styles */
         .modal {
             display: none;
@@ -29,7 +28,6 @@
             overflow: auto;
             background-color: rgba(0,0,0,0.4);
         }
-
         .modal-content {
             background-color: #fefefe;
             position: relative;
@@ -41,7 +39,6 @@
             box-shadow: 0px 0px 10px #000;
             border-radius: 8px;
         }
-
         .close {
             color: #aaa;
             float: right;
@@ -49,20 +46,17 @@
             font-weight: bold;
             cursor: pointer;
         }
-
         .close:hover {
             color: black;
         }
-
         #openPopup {
             margin: 20px 0;
             padding: 8px 16px;
             font-size: 16px;
             cursor: pointer;
         }
-
-        /* Filter form style */
-        #filterForm input[type="text"] {
+        #filterForm input[type="text"], 
+        #filterForm input[type="date"] {
             display: inline;
             margin-right: 10px;
         }
@@ -89,6 +83,12 @@
             <input type="checkbox" name="in_stock" value="1" {% if in_stock %}checked{% endif %}>
             In Stock Only
         </label>
+
+        <label for="start_date">Start Date:</label>
+        <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+
+        <label for="end_date">End Date:</label>
+        <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
 
         <button type="submit">Filter</button>
     </form>
@@ -125,6 +125,45 @@
         {% endfor %}
     </table>
 
+    <!-- ✅ PAGINATION CONTROLS -->
+    <div class="pagination">
+        {% if transactions.has_previous %}
+            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
+                     {% if product %}product={{ product }}&{% endif %}
+                     {% if trackings %}trackings={{ trackings }}&{% endif %}
+                     {% if in_stock %}in_stock=1&{% endif %}
+                     {% if start_date %}start_date={{ start_date }}&{% endif %}
+                     {% if end_date %}end_date={{ end_date }}&{% endif %}
+                     page=1">First</a>
+            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
+                     {% if product %}product={{ product }}&{% endif %}
+                     {% if trackings %}trackings={{ trackings }}&{% endif %}
+                     {% if in_stock %}in_stock=1&{% endif %}
+                     {% if start_date %}start_date={{ start_date }}&{% endif %}
+                     {% if end_date %}end_date={{ end_date }}&{% endif %}
+                     page={{ transactions.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
+
+        {% if transactions.has_next %}
+            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
+                     {% if product %}product={{ product }}&{% endif %}
+                     {% if trackings %}trackings={{ trackings }}&{% endif %}
+                     {% if in_stock %}in_stock=1&{% endif %}
+                     {% if start_date %}start_date={{ start_date }}&{% endif %}
+                     {% if end_date %}end_date={{ end_date }}&{% endif %}
+                     page={{ transactions.next_page_number }}">Next</a>
+            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
+                     {% if product %}product={{ product }}&{% endif %}
+                     {% if trackings %}trackings={{ trackings }}&{% endif %}
+                     {% if in_stock %}in_stock=1&{% endif %}
+                     {% if start_date %}start_date={{ start_date }}&{% endif %}
+                     {% if end_date %}end_date={{ end_date }}&{% endif %}
+                     page={{ transactions.paginator.num_pages }}">Last</a>
+        {% endif %}
+    </div>
+
     <!-- Popup Modal Form -->
     <div id="popupForm" class="modal">
         <div class="modal-content">
@@ -133,4 +172,32 @@
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript to handle modal -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var modal = document.getElementById("popupForm");
+            var btn = document.getElementById("openPopup");
+            var span = document.querySelector(".close");
+
+            btn.onclick = function () {
+                modal.style.display = "block";
+            }
+
+            span.onclick = function () {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        });
+    </script>
+</body>
+</html>
