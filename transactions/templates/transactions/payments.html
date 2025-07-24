@@ -1,9 +1,27 @@
 <h1>Payments</h1>
 
-<form method="get">
-  <label for="person_id">Search Person ID:</label>
-  <input type="text" name="person_id" id="person_id" value="{{ query }}">
-  <button type="submit">Filter</button>
+<form id="filterForm" method="get">
+    <label for="person_id">Person ID:</label>
+    <input type="text" name="person_id" id="person_id" value="{{ person_id|default_if_none:'' }}">
+
+    <label for="product">Product:</label>
+    <input type="text" name="product" id="product" value="{{ product|default_if_none:'' }}">
+
+    <label for="trackings">Trackings:</label>
+    <input type="text" name="trackings" id="trackings" value="{{ trackings|default_if_none:'' }}">
+
+    <label>
+        <input type="checkbox" name="in_stock" value="1" {% if in_stock %}checked{% endif %}>
+        In Stock Only
+    </label>
+
+    <label for="start_date">Start Date:</label>
+    <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+
+    <label for="end_date">End Date:</label>
+    <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
+
+    <button type="submit">Filter</button>
 </form>
 
 <table border="1">
