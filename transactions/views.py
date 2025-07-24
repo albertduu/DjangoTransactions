@@ -3,6 +3,7 @@ from .models import Transaction
 from .forms import TransactionForm
 from django.db.models import F, Sum, ExpressionWrapper, FloatField
 from django.utils.dateparse import parse_date
+from django.core.paginator import Paginator
 
 def transaction_list(request):
     if request.method == 'POST':
@@ -13,6 +14,7 @@ def transaction_list(request):
     else:
         form = TransactionForm()
 
+    # filters
     person_id = request.GET.get('person_id')
     product = request.GET.get('product')
     in_stock = request.GET.get('in_stock')
@@ -35,8 +37,13 @@ def transaction_list(request):
     if end_date:
         transactions = transactions.filter(ts__date__lte=end_date)
 
+    # ✅ Paginate main list
+    paginator = Paginator(transactions, 200)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'transactions/list.html', {
-        'transactions': transactions,
+        'transactions': page_obj,
         'form': form,
         'person_id': person_id,
         'product': product,
@@ -47,22 +54,27 @@ def transaction_list(request):
     })
 
 def payments(request):
-    query = request.GET.get('person_id')  # get search input
+    person_id = request.GET.get('person_id')
+
+    if person_id:
+        # ✅ If filtering a specific person, show their transactions
+        transactions = Transaction.objects.filter(person_id__icontains=person_id).order_by('-ts')
+
+        # ✅ Pagination — 200 per page
+        paginator = Paginator(transactions, 200)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        return render(request, 'transactions/person_transactions.html', {
+            'transactions': page_obj,
+            'person_id': person_id
+        })
+
+    # ✅ Otherwise, show summed payments
     payments = (
         Transaction.objects
         .values('person_id')
-        .annotate(
-            total_payment=Sum(
-                ExpressionWrapper(
-                    F('quantity') * F('price'),
-                    output_field=FloatField()
-                )
-            )
-        )
-        .order_by('-total_payment')
+        .annotate(total_remaining=Sum(F('quantity') * F('price')))
+        .order_by('-total_remaining')
     )
-
-    if query:
-        payments = payments.filter(person_id__icontains=query)
-
-    return render(request, 'transactions/payments.html', {'payments': payments, 'query': query})
+    return render(request, 'transactions/payments.html', {'payments': payments})
