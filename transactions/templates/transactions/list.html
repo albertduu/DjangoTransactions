@@ -11,13 +11,34 @@
             padding: 5px;
             font-size: 14px;
         }
-        form {
-            margin-top: 20px;
+
+        form#filterForm {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
         }
-        input, select, textarea {
-            margin-bottom: 10px;
-            display: block;
+
+        form#filterForm div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
+
+        form#filterForm label {
+            font-weight: bold;
+        }
+
+        form#filterForm input[type="text"],
+        form#filterForm input[type="date"] {
+            padding: 5px;
+        }
+
+        form#filterForm button {
+            padding: 5px 10px;
+        }
+
         /* Modal styles */
         .modal {
             display: none;
@@ -28,6 +49,7 @@
             overflow: auto;
             background-color: rgba(0,0,0,0.4);
         }
+
         .modal-content {
             background-color: #fefefe;
             position: relative;
@@ -39,6 +61,7 @@
             box-shadow: 0px 0px 10px #000;
             border-radius: 8px;
         }
+
         .close {
             color: #aaa;
             float: right;
@@ -46,49 +69,55 @@
             font-weight: bold;
             cursor: pointer;
         }
+
         .close:hover {
             color: black;
         }
+
         #openPopup {
             margin: 20px 0;
             padding: 8px 16px;
             font-size: 16px;
             cursor: pointer;
         }
-        #filterForm input[type="text"], 
-        #filterForm input[type="date"] {
-            display: inline;
-            margin-right: 10px;
-        }
-        #filterForm label {
-            margin-right: 5px;
-        }
     </style>
 </head>
 <body>
     <h1>Transaction List</h1>
 
-    <!-- ✅ FILTER FORM -->
+    <!-- Filter Form -->
     <form id="filterForm" method="get">
-        <label for="person_id">Person ID:</label>
-        <input type="text" name="person_id" id="person_id" value="{{ person_id|default_if_none:'' }}">
+        <div>
+            <label for="person_id">Person ID:</label>
+            <input type="text" name="person_id" id="person_id" value="{{ request.GET.person_id }}">
+        </div>
 
-        <label for="product">Product:</label>
-        <input type="text" name="product" id="product" value="{{ product|default_if_none:'' }}">
+        <div>
+            <label for="product">Product:</label>
+            <input type="text" name="product" id="product" value="{{ request.GET.product }}">
+        </div>
 
-        <label for="trackings">Trackings:</label>
-        <input type="text" name="trackings" id="trackings" value="{{ trackings|default_if_none:'' }}">
+        <div>
+            <label for="trackings">Trackings:</label>
+            <input type="text" name="trackings" id="trackings" value="{{ request.GET.trackings }}">
+        </div>
 
-        <label>
-            <input type="checkbox" name="in_stock" value="1" {% if in_stock %}checked{% endif %}>
-            In Stock Only
-        </label>
+        <div>
+            <label>
+                <input type="checkbox" name="in_stock" value="1" {% if request.GET.in_stock %}checked{% endif %}>
+                In Stock Only
+            </label>
+        </div>
 
-        <label for="start_date">Start Date:</label>
-        <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+        <div>
+            <label for="start_date">Start Date:</label>
+            <input type="date" name="start_date" id="start_date" value="{{ request.GET.start_date }}">
+        </div>
 
-        <label for="end_date">End Date:</label>
-        <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
+        <div>
+            <label for="end_date">End Date:</label>
+            <input type="date" name="end_date" id="end_date" value="{{ request.GET.end_date }}">
+        </div>
 
         <button type="submit">Filter</button>
     </form>
@@ -121,48 +150,11 @@
             <td>{{ t.shipped }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="14">No transactions found.</td></tr>
+        <tr>
+            <td colspan="14">No transactions found.</td>
+        </tr>
         {% endfor %}
     </table>
-
-    <!-- ✅ PAGINATION CONTROLS -->
-    <div class="pagination">
-        {% if transactions.has_previous %}
-            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                     {% if product %}product={{ product }}&{% endif %}
-                     {% if trackings %}trackings={{ trackings }}&{% endif %}
-                     {% if in_stock %}in_stock=1&{% endif %}
-                     {% if start_date %}start_date={{ start_date }}&{% endif %}
-                     {% if end_date %}end_date={{ end_date }}&{% endif %}
-                     page=1">First</a>
-            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                     {% if product %}product={{ product }}&{% endif %}
-                     {% if trackings %}trackings={{ trackings }}&{% endif %}
-                     {% if in_stock %}in_stock=1&{% endif %}
-                     {% if start_date %}start_date={{ start_date }}&{% endif %}
-                     {% if end_date %}end_date={{ end_date }}&{% endif %}
-                     page={{ transactions.previous_page_number }}">Previous</a>
-        {% endif %}
-
-        Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
-
-        {% if transactions.has_next %}
-            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                     {% if product %}product={{ product }}&{% endif %}
-                     {% if trackings %}trackings={{ trackings }}&{% endif %}
-                     {% if in_stock %}in_stock=1&{% endif %}
-                     {% if start_date %}start_date={{ start_date }}&{% endif %}
-                     {% if end_date %}end_date={{ end_date }}&{% endif %}
-                     page={{ transactions.next_page_number }}">Next</a>
-            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                     {% if product %}product={{ product }}&{% endif %}
-                     {% if trackings %}trackings={{ trackings }}&{% endif %}
-                     {% if in_stock %}in_stock=1&{% endif %}
-                     {% if start_date %}start_date={{ start_date }}&{% endif %}
-                     {% if end_date %}end_date={{ end_date }}&{% endif %}
-                     page={{ transactions.paginator.num_pages }}">Last</a>
-        {% endif %}
-    </div>
 
     <!-- Popup Modal Form -->
     <div id="popupForm" class="modal">
