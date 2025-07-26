@@ -80,6 +80,16 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        .clickable-link {
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -135,12 +145,26 @@
         {% for t in transactions %}
         <tr>
             <td>{{ t.ts }}</td>
-            <td>{{ t.person_id }}</td>
+
+            <!-- Person ID clickable -->
+            <td>
+                <button class="clickable-link open-email" data-email="{{ t.email }}">
+                    {{ t.person_id }}
+                </button>
+            </td>
+
             <td>{{ t.email }}</td>
             <td>{{ t.phone }}</td>
             <td>{{ t.location }}</td>
             <td>{{ t.product }}</td>
-            <td>{{ t.quantity }}</td>
+
+            <!-- Quantity clickable -->
+            <td>
+                <button class="clickable-link open-email" data-email="{{ t.email }}">
+                    {{ t.quantity }}
+                </button>
+            </td>
+
             <td>{{ t.price }}</td>
             <td>{{ t.payment }}</td>
             <td>{{ t.notes }}</td>
@@ -169,26 +193,63 @@
         </div>
     </div>
 
-    <!-- JavaScript to handle modal -->
+    <!-- Send Email Modal -->
+    <div id="emailModal" class="modal">
+        <div class="modal-content">
+            <span class="close email-close">&times;</span>
+            <h2>Send Email</h2>
+            <form method="post" action="{% url 'send_email' %}">
+                {% csrf_token %}
+                <input type="hidden" name="recipient" id="emailRecipient">
+                <p><strong>To:</strong> <span id="emailRecipientDisplay"></span></p>
+                <label for="subject">Subject:</label>
+                <input type="text" name="subject" id="subject" required>
+                <label for="message">Message:</label>
+                <textarea name="message" id="message" rows="5" required></textarea>
+                <button type="submit">Send Email</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript to handle modals -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            var modal = document.getElementById("popupForm");
-            var btn = document.getElementById("openPopup");
-            var span = document.querySelector(".close");
+            var addModal = document.getElementById("popupForm");
+            var emailModal = document.getElementById("emailModal");
+            var openAddBtn = document.getElementById("openPopup");
+            var addCloseBtn = addModal.querySelector(".close");
+            var emailCloseBtn = emailModal.querySelector(".email-close");
 
-            btn.onclick = function () {
-                modal.style.display = "block";
+            openAddBtn.onclick = function () {
+                addModal.style.display = "block";
             }
 
-            span.onclick = function () {
-                modal.style.display = "none";
+            addCloseBtn.onclick = function () {
+                addModal.style.display = "none";
+            }
+
+            emailCloseBtn.onclick = function () {
+                emailModal.style.display = "none";
             }
 
             window.onclick = function (event) {
-                if (event.target == modal) {
-                    modal.style.display = "none";
+                if (event.target == addModal) {
+                    addModal.style.display = "none";
+                } else if (event.target == emailModal) {
+                    emailModal.style.display = "none";
                 }
             }
+
+            // Add click event for Person ID and Quantity buttons
+            var emailButtons = document.querySelectorAll(".open-email");
+            emailButtons.forEach(function(btn) {
+                btn.addEventListener("click", function () {
+                    var email = this.dataset.email;
+                    document.getElementById("emailRecipient").value = email;
+                    document.getElementById("emailRecipientDisplay").innerText = email;
+                    emailModal.style.display = "block";
+                });
+            });
         });
     </script>
 </body>
