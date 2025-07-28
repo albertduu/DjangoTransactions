@@ -4,6 +4,9 @@ from .forms import TransactionForm
 from django.db.models import F, Sum, ExpressionWrapper, FloatField
 from django.utils.dateparse import parse_date
 from django.core.paginator import Paginator
+from django.core.mail import send_mail
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 
 def transaction_list(request):
     if request.method == 'POST':
@@ -78,3 +81,21 @@ def payments(request):
         .order_by('-total_remaining')
     )
     return render(request, 'transactions/payments.html', {'payments': payments})
+
+@csrf_exempt  # Optional: if you’re testing and CSRF fails
+def send_email(request):
+    if request.method == 'POST':
+        recipient = request.POST.get('recipient')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,  # Or your configured from email
+            [recipient],
+            fail_silently=False,
+        )
+        return redirect('transaction-list')  # or anywhere you want
+
+    return redirect('transaction-list')
