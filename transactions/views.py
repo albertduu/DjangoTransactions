@@ -7,25 +7,22 @@ from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import EmailMessage
 
 def transaction_list(request):
-    if request.method == 'POST':
-        form = TransactionForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('transaction-list')
-    else:
-        form = TransactionForm()
+    form = TransactionForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('transaction-list')
 
-    # filters
+    # Filters
+    transactions = Transaction.objects.all()
     person_id = request.GET.get('person_id')
     product = request.GET.get('product')
     in_stock = request.GET.get('in_stock')
     trackings = request.GET.get('trackings')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-
-    transactions = Transaction.objects.all()
 
     if person_id:
         transactions = transactions.filter(person_id__icontains=person_id)
@@ -40,8 +37,7 @@ def transaction_list(request):
     if end_date:
         transactions = transactions.filter(ts__date__lte=end_date)
 
-    # ✅ Paginate main list
-    paginator = Paginator(transactions, 200)
+    paginator = Paginator(transactions.order_by('-ts'), 200)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -85,17 +81,15 @@ def payments(request):
 @csrf_exempt  # Optional: if you’re testing and CSRF fails
 def send_email(request):
     if request.method == 'POST':
-        recipient = request.POST.get('recipient')
-        subject = request.POST.get('subject')
-        message = request.POST.get('message')
+        recipient = request.POST['recipient']
+        subject = request.POST['subject']
+        message = request.POST['message']
+        attachment = request.FILES.get('attachment')
 
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,  # Or your configured from email
-            [recipient],
-            fail_silently=False,
-        )
-        return redirect('transaction-list')  # or anywhere you want
+        email = EmailMessage(subject, message, settings.EMAIL_HOST_USER, [recipient])
+        if attachment:
+            email.attach(attachment.name, attachment.read(), attachment.content_type)
 
-    return redirect('transaction-list')
+        email.send()
+
+        return redirect('transaction-list')
