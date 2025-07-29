@@ -78,7 +78,7 @@ def payments(request):
     )
     return render(request, 'transactions/payments.html', {'payments': payments})
 
-@csrf_exempt  # Optional: if you’re testing and CSRF fails
+
 def send_email(request):
     if request.method == 'POST':
         recipient = request.POST['recipient']
