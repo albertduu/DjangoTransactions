@@ -158,39 +158,26 @@
     <!-- Pagination Controls -->
     <div class="pagination">
         {% if transactions.has_previous %}
-            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                     {% if product %}product={{ product }}&{% endif %}
-                     {% if trackings %}trackings={{ trackings }}&{% endif %}
-                     {% if in_stock %}in_stock=1&{% endif %}
-                     {% if start_date %}start_date={{ start_date }}&{% endif %}
-                     {% if end_date %}end_date={{ end_date }}&{% endif %}
-                     page={{ transactions.previous_page_number }}">&laquo; Previous</a>
+            <a href="?{% querystring request GET 'page' transactions.previous_page_number %}">&laquo; Previous</a>
         {% endif %}
 
         <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
 
         {% if transactions.has_next %}
-            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                     {% if product %}product={{ product }}&{% endif %}
-                     {% if trackings %}trackings={{ trackings }}&{% endif %}
-                     {% if in_stock %}in_stock=1&{% endif %}
-                     {% if start_date %}start_date={{ start_date }}&{% endif %}
-                     {% if end_date %}end_date={{ end_date }}&{% endif %}
-                     page={{ transactions.next_page_number }}">Next &raquo;</a>
+            <a href="?{% querystring request GET 'page' transactions.next_page_number %}">Next &raquo;</a>
         {% endif %}
 
-        <form method="get">
-            {% if person_id %}<input type="hidden" name="person_id" value="{{ person_id }}">{% endif %}
-            {% if product %}<input type="hidden" name="product" value="{{ product }}">{% endif %}
-            {% if trackings %}<input type="hidden" name="trackings" value="{{ trackings }}">{% endif %}
-            {% if in_stock %}<input type="hidden" name="in_stock" value="1">{% endif %}
-            {% if start_date %}<input type="hidden" name="start_date" value="{{ start_date }}">{% endif %}
-            {% if end_date %}<input type="hidden" name="end_date" value="{{ end_date }}">{% endif %}
+        <form method="get" style="display:inline;">
+            {% for key, value in request.GET.items %}
+            {% if key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+            {% endfor %}
             <label for="page">Jump to:</label>
             <input type="number" name="page" id="page" min="1" max="{{ transactions.paginator.num_pages }}" value="{{ transactions.number }}">
             <button type="submit">Go</button>
         </form>
-    </div>
+        </div>
 
     <!-- Add Transaction Button -->
     <button id="openPopup">Add Transaction</button>
