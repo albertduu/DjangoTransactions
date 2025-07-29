@@ -156,23 +156,22 @@
         <button type="submit">Filter</button>
     </form>
 
-    <!-- Pagination Controls -->
     <div class="pagination">
         {% if transactions.has_previous %}
-            <a href="?{% querystring request GET 'page' transactions.previous_page_number %}">&laquo; Previous</a>
+            <a href="?{% querystring page=transactions.previous_page_number %}">&laquo; Previous</a>
         {% endif %}
 
         <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
 
         {% if transactions.has_next %}
-            <a href="?{% querystring request GET 'page' transactions.next_page_number %}">Next &raquo;</a>
+            <a href="?{% querystring page=transactions.next_page_number %}">Next &raquo;</a>
         {% endif %}
 
         <form method="get" style="display:inline;">
             {% for key, value in request.GET.items %}
-            {% if key != 'page' %}
-                <input type="hidden" name="{{ key }}" value="{{ value }}">
-            {% endif %}
+                {% if key != 'page' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
             {% endfor %}
             <label for="page">Jump to:</label>
             <input type="number" name="page" id="page" min="1" max="{{ transactions.paginator.num_pages }}" value="{{ transactions.number }}">
