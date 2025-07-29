@@ -258,34 +258,28 @@
         });
     </script>
     <!-- Pagination Controls -->
-    <div style="margin-top: 20px;">
-        <span>
-            {% if transactions.has_previous %}
-                <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                        {% if product %}product={{ product }}&{% endif %}
-                        {% if trackings %}trackings={{ trackings }}&{% endif %}
-                        {% if in_stock %}in_stock=1&{% endif %}
-                        {% if start_date %}start_date={{ start_date }}&{% endif %}
-                        {% if end_date %}end_date={{ end_date }}&{% endif %}
-                        page={{ transactions.previous_page_number }}">Previous</a>
-            {% endif %}
-        </span>
+    <div class="pagination">
+        {% if transactions.has_previous %}
+            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
+                    {% if product %}product={{ product }}&{% endif %}
+                    {% if trackings %}trackings={{ trackings }}&{% endif %}
+                    {% if in_stock %}in_stock=1&{% endif %}
+                    {% if start_date %}start_date={{ start_date }}&{% endif %}
+                    {% if end_date %}end_date={{ end_date }}&{% endif %}
+                    page={{ transactions.previous_page_number }}">Previous</a>
+        {% endif %}
 
-        <span style="margin: 0 10px;">
-            Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
-        </span>
+        <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
 
-        <span>
-            {% if transactions.has_next %}
-                <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
-                        {% if product %}product={{ product }}&{% endif %}
-                        {% if trackings %}trackings={{ trackings }}&{% endif %}
-                        {% if in_stock %}in_stock=1&{% endif %}
-                        {% if start_date %}start_date={{ start_date }}&{% endif %}
-                        {% if end_date %}end_date={{ end_date }}&{% endif %}
-                        page={{ transactions.next_page_number }}">Next</a>
-            {% endif %}
-        </span>
+        {% if transactions.has_next %}
+            <a href="?{% if person_id %}person_id={{ person_id }}&{% endif %}
+                    {% if product %}product={{ product }}&{% endif %}
+                    {% if trackings %}trackings={{ trackings }}&{% endif %}
+                    {% if in_stock %}in_stock=1&{% endif %}
+                    {% if start_date %}start_date={{ start_date }}&{% endif %}
+                    {% if end_date %}end_date={{ end_date }}&{% endif %}
+                    page={{ transactions.next_page_number }}">Next</a>
+        {% endif %}
     </div>
 </body>
 </html>
