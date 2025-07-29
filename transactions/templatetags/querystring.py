@@ -1,10 +1,18 @@
 from django import template
-from urllib.parse import urlencode
 
 register = template.Library()
 
-@register.simple_tag
-def querystring(request, GET, param, value):
-    params = GET.copy()
-    params[param] = value
-    return urlencode(params)
+@register.simple_tag(takes_context=True)
+def querystring(context, **kwargs):
+    """
+    Update query string params while preserving others.
+    Usage: {% querystring page=2 %}
+    """
+    request = context['request']
+    query = request.GET.copy()
+    for k, v in kwargs.items():
+        if v is None:
+            query.pop(k, None)
+        else:
+            query[k] = v
+    return query.urlencode()
