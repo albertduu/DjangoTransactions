@@ -1,32 +1,51 @@
-<h1>Transactions for Person ID: {{ person_id }}</h1>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transactions for {{ person_id }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Transactions for Person ID: {{ person_id }}</h1>
 
-<table>
-    <tr>
-        <th>Timestamp</th><th>Person ID</th><th>Product</th><th>Quantity</th><th>Price</th><th>Payment</th>
-        <!-- add more columns as needed -->
-    </tr>
-    {% for t in transactions %}
-    <tr>
-        <td>{{ t.ts }}</td>
-        <td>{{ t.person_id }}</td>
-        <td>{{ t.product }}</td>
-        <td>{{ t.quantity }}</td>
-        <td>{{ t.price }}</td>
-        <td>{{ t.payment }}</td>
-    </tr>
-    {% endfor %}
-</table>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Payment</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+                <tr>
+                    <td>{{ t.ts }}</td>
+                    <td>{{ t.product }}</td>
+                    <td>{{ t.quantity }}</td>
+                    <td>{{ t.price }}</td>
+                    <td>{{ t.payment }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No transactions found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-<div class="pagination">
-    {% if transactions.has_previous %}
-        <a href="?person_id={{ person_id }}&page=1">First</a>
-        <a href="?person_id={{ person_id }}&page={{ transactions.previous_page_number }}">Previous</a>
-    {% endif %}
-
-    Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
-
-    {% if transactions.has_next %}
-        <a href="?person_id={{ person_id }}&page={{ transactions.next_page_number }}">Next</a>
-        <a href="?person_id={{ person_id }}&page={{ transactions.paginator.num_pages }}">Last</a>
-    {% endif %}
-</div>
+    <div class="pagination">
+        {% if transactions.has_previous %}
+            <a href="?person_id={{ person_id }}&page={{ transactions.previous_page_number }}">« Previous</a>
+        {% endif %}
+        <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+        {% if transactions.has_next %}
+            <a href="?person_id={{ person_id }}&page={{ transactions.next_page_number }}">Next »</a>
+        {% endif %}
+    </div>
+</body>
+</html>

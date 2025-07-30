@@ -1,49 +1,111 @@
-<div style="text-align: right; margin-bottom: 10px;">
-  <div class="tab-bar" style="display: inline-block;">
-    <a href="{% url 'transaction-list' %}">Transactions</a>
-  </div>
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .tab-bar {
+            text-align: right;
+            margin: 20px 0;
+        }
+
+        .tab-bar a {
+            padding: 8px 12px;
+            background: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .tab-bar a:hover {
+            background: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .pagination {
+            text-align: right;
+            margin: 20px 0;
+        }
+
+        .pagination form {
+            display: inline-block;
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <a href="{% url 'transaction-list' %}">Transactions</a>
     </div>
 
-    <div class="pagination" style="display: inline-block; margin-left: 20px;">
+    <h1>Payments Summary</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Person ID</th>
+                <th>Total Remaining</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+                <tr>
+                    <td>
+                        <a href="?person_id={{ payment.person_id }}">{{ payment.person_id }}</a>
+                    </td>
+                    <td>{{ payment.total_remaining }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2">No payments found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
         {% if payments.has_previous %}
-            <a href="?page={{ payments.previous_page_number }}">&laquo; Previous</a>
+            <a href="?page={{ payments.previous_page_number }}">« Previous</a>
         {% endif %}
 
         <span>Page {{ payments.number }} of {{ payments.paginator.num_pages }}</span>
 
         {% if payments.has_next %}
-            <a href="?page={{ payments.next_page_number }}">Next &raquo;</a>
+            <a href="?page={{ payments.next_page_number }}">Next »</a>
         {% endif %}
 
-        <form method="get" style="display:inline;">
+        <form method="get">
             {% for key, value in request.GET.items %}
                 {% if key != 'page' %}
                     <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endif %}
             {% endfor %}
-            <label for="page">Jump to:</label>
-            <input type="number" name="page" id="page" min="1" max="{{ payments.paginator.num_pages }}" value="{{ payments.number }}">
+            Jump to:
+            <input type="number" name="page" min="1" max="{{ payments.paginator.num_pages }}" value="{{ payments.number }}">
             <button type="submit">Go</button>
         </form>
     </div>
-</div>
-
-<!-- Payments Table -->
-<table>
-    <tr>
-        <th>Person ID</th>
-        <th>Total Remaining</th>
-    </tr>
-    {% for p in payments %}
-    <tr>
-        <td>
-            <a href="?person_id={{ p.person_id }}">{{ p.person_id }}</a>
-        </td>
-        <td>{{ p.total_remaining }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="2">No payments found.</td>
-    </tr>
-    {% endfor %}
-</table>
+</body>
+</html>
