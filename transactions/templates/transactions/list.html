@@ -39,6 +39,7 @@
             padding: 5px 10px;
         }
 
+        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -57,7 +58,7 @@
             padding: 20px;
             border: 1px solid #888;
             width: 400px;
-            box-shadow: 0 0 10px #000;
+            box-shadow: 0px 0px 10px #000;
             border-radius: 8px;
         }
 
@@ -91,32 +92,29 @@
         }
 
         .pagination {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
+            margin-top: 40px;
+        }
+
+        .tab-bar {
+            margin-top: 20px;
             margin-bottom: 10px;
         }
 
-        .pagination a {
-            margin: 0 5px;
+        .tab-bar a {
+            padding: 8px 12px;
+            background: #007BFF;
+            color: white;
             text-decoration: none;
+            border-radius: 4px;
+            margin-right: 10px;
         }
 
-        .pagination form {
-            display: inline-flex;
-            align-items: center;
-            margin-left: 15px;
-        }
-
-        .pagination input[type="number"] {
-            width: 60px;
-            margin: 0 5px;
-            padding: 2px;
+        .tab-bar a:hover {
+            background: #0056b3;
         }
     </style>
 </head>
 <body>
-    {% load querystring %}
     <h1>Transaction List</h1>
 
     <!-- Filter Form -->
@@ -156,29 +154,6 @@
         <button type="submit">Filter</button>
     </form>
 
-    <div class="pagination">
-        {% if transactions.has_previous %}
-            <a href="?{% querystring page=transactions.previous_page_number %}">&laquo; Previous</a>
-        {% endif %}
-
-        <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
-
-        {% if transactions.has_next %}
-            <a href="?{% querystring page=transactions.next_page_number %}">Next &raquo;</a>
-        {% endif %}
-
-        <form method="get" style="display:inline;">
-            {% for key, value in request.GET.items %}
-                {% if key != 'page' %}
-                    <input type="hidden" name="{{ key }}" value="{{ value }}">
-                {% endif %}
-            {% endfor %}
-            <label for="page">Jump to:</label>
-            <input type="number" name="page" id="page" min="1" max="{{ transactions.paginator.num_pages }}" value="{{ transactions.number }}">
-            <button type="submit">Go</button>
-        </form>
-    </div>
-
     <!-- Add Transaction Button -->
     <button id="openPopup">Add Transaction</button>
 
@@ -192,20 +167,26 @@
         {% for t in transactions %}
         <tr>
             <td>{{ t.ts }}</td>
+
+            <!-- Person ID clickable -->
             <td>
                 <button class="clickable-link open-email" data-email="{{ t.email }}">
                     {{ t.person_id }}
                 </button>
             </td>
+
             <td>{{ t.email }}</td>
             <td>{{ t.phone }}</td>
             <td>{{ t.location }}</td>
             <td>{{ t.product }}</td>
+
+            <!-- Quantity clickable -->
             <td>
                 <button class="clickable-link open-email" data-email="{{ t.email }}">
                     {{ t.quantity }}
                 </button>
             </td>
+
             <td>{{ t.price }}</td>
             <td>{{ t.payment }}</td>
             <td>{{ t.notes }}</td>
@@ -221,7 +202,7 @@
         {% endfor %}
     </table>
 
-    <!-- Add Transaction Modal -->
+    <!-- Popup Modal Form -->
     <div id="popupForm" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -254,6 +235,36 @@
         </div>
     </div>
 
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <a href="{% url 'payments' %}">Payments</a>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        {% if transactions.has_previous %}
+            <a href="?{% querystring page=transactions.previous_page_number %}">&laquo; Previous</a>
+        {% endif %}
+
+        <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+
+        {% if transactions.has_next %}
+            <a href="?{% querystring page=transactions.next_page_number %}">Next &raquo;</a>
+        {% endif %}
+
+        <form method="get" style="display:inline;">
+            {% for key, value in request.GET.items %}
+                {% if key != 'page' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+            {% endfor %}
+            <label for="page">Jump to:</label>
+            <input type="number" name="page" id="page" min="1" max="{{ transactions.paginator.num_pages }}" value="{{ transactions.number }}">
+            <button type="submit">Go</button>
+        </form>
+    </div>
+
+    <!-- JavaScript to handle modals -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             var addModal = document.getElementById("popupForm");
@@ -283,7 +294,7 @@
             }
 
             var emailButtons = document.querySelectorAll(".open-email");
-            emailButtons.forEach(function (btn) {
+            emailButtons.forEach(function(btn) {
                 btn.addEventListener("click", function () {
                     var email = this.dataset.email;
                     document.getElementById("emailRecipient").value = email;
