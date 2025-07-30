@@ -1,44 +1,48 @@
-<h1>Payments</h1>
+<div style="text-align: right; margin-bottom: 10px;">
+    <div class="tab-bar" style="display: inline-block;">
+        <a href="{% url 'transactions' %}">Transactions</a>
+    </div>
 
-<form id="filterForm" method="get">
-    <label for="person_id">Person ID:</label>
-    <input type="text" name="person_id" id="person_id" value="{{ person_id|default_if_none:'' }}">
+    <div class="pagination" style="display: inline-block; margin-left: 20px;">
+        {% if payments.has_previous %}
+            <a href="?page={{ payments.previous_page_number }}">&laquo; Previous</a>
+        {% endif %}
 
-    <label for="product">Product:</label>
-    <input type="text" name="product" id="product" value="{{ product|default_if_none:'' }}">
+        <span>Page {{ payments.number }} of {{ payments.paginator.num_pages }}</span>
 
-    <label for="trackings">Trackings:</label>
-    <input type="text" name="trackings" id="trackings" value="{{ trackings|default_if_none:'' }}">
+        {% if payments.has_next %}
+            <a href="?page={{ payments.next_page_number }}">Next &raquo;</a>
+        {% endif %}
 
-    <label>
-        <input type="checkbox" name="in_stock" value="1" {% if in_stock %}checked{% endif %}>
-        In Stock Only
-    </label>
+        <form method="get" style="display:inline;">
+            {% for key, value in request.GET.items %}
+                {% if key != 'page' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+            {% endfor %}
+            <label for="page">Jump to:</label>
+            <input type="number" name="page" id="page" min="1" max="{{ payments.paginator.num_pages }}" value="{{ payments.number }}">
+            <button type="submit">Go</button>
+        </form>
+    </div>
+</div>
 
-    <label for="start_date">Start Date:</label>
-    <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
-
-    <label for="end_date">End Date:</label>
-    <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
-
-    <button type="submit">Filter</button>
-</form>
-
-<table border="1">
-  <thead>
+<!-- Payments Table -->
+<table>
     <tr>
-      <th>Person ID</th>
-      <th>Total Payment</th>
+        <th>Person ID</th>
+        <th>Total Remaining</th>
     </tr>
-  </thead>
-  <tbody>
     {% for p in payments %}
-      <tr>
-        <td>{{ p.person_id }}</td>
-        <td>{{ p.total_payment }}</td>
-      </tr>
+    <tr>
+        <td>
+            <a href="?person_id={{ p.person_id }}">{{ p.person_id }}</a>
+        </td>
+        <td>{{ p.total_remaining }}</td>
+    </tr>
     {% empty %}
-      <tr><td colspan="2">No results found.</td></tr>
+    <tr>
+        <td colspan="2">No payments found.</td>
+    </tr>
     {% endfor %}
-  </tbody>
 </table>

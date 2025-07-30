@@ -56,10 +56,14 @@ def payments(request):
     person_id = request.GET.get('person_id')
 
     if person_id:
-        # ✅ If filtering a specific person, show their transactions
-        transactions = Transaction.objects.filter(person_id__icontains=person_id).order_by('-ts')
+        # If filtering a specific person — show their transactions
+        transactions = (
+            Transaction.objects
+            .filter(person_id__icontains=person_id)
+            .order_by('-ts')
+        )
 
-        # ✅ Pagination — 200 per page
+        # Paginate transactions
         paginator = Paginator(transactions, 200)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -69,14 +73,23 @@ def payments(request):
             'person_id': person_id
         })
 
-    # ✅ Otherwise, show summed payments
-    payments = (
-        Transaction.objects
-        .values('person_id')
-        .annotate(total_remaining=Sum(F('quantity') * F('price')))
-        .order_by('-total_remaining')
-    )
-    return render(request, 'transactions/payments.html', {'payments': payments})
+    else:
+        # Otherwise, show summed payments per person_id
+        payments = (
+            Transaction.objects
+            .values('person_id')
+            .annotate(total_remaining=Sum(F('quantity') * F('price')))
+            .order_by('-total_remaining')
+        )
+
+        # ✅ Paginate summed payments too
+        paginator = Paginator(payments, 100)  # Adjust page size as needed
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        return render(request, 'transactions/payments.html', {
+            'payments': page_obj
+        })
 
 
 def send_email(request):
