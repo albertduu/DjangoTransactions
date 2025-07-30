@@ -1,11 +1,17 @@
+# transactions/templatetags/querystring.py
+
 from django import template
 
 register = template.Library()
 
 @register.simple_tag(takes_context=True)
 def querystring(context, **kwargs):
+    """
+    Custom template tag to build query string while replacing keys.
+    Usage: {% querystring page=2 %}
+    """
     request = context['request']
-    query = request.GET.copy()
+    updated = request.GET.copy()
     for key, value in kwargs.items():
-        query[key] = value
-    return query.urlencode()
+        updated[key] = value
+    return updated.urlencode()
