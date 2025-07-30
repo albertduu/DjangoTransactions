@@ -155,8 +155,41 @@
         <button type="submit">Filter</button>
     </form>
 
+
     <!-- Add Transaction Button -->
     <button id="openPopup">Add Transaction</button>
+
+        <!-- Top Right Controls -->
+    <div style="text-align: right; margin-bottom: 10px;">
+        <!-- Payments Tab -->
+        <div class="tab-bar" style="display: inline-block;">
+            <a href="{% url 'payments' %}">Payments</a>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination" style="display: inline-block; margin-left: 20px;">
+            {% if transactions.has_previous %}
+                <a href="?{% querystring page=transactions.previous_page_number %}">&laquo; Previous</a>
+            {% endif %}
+
+            <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+
+            {% if transactions.has_next %}
+                <a href="?{% querystring page=transactions.next_page_number %}">Next &raquo;</a>
+            {% endif %}
+
+            <form method="get" style="display:inline;">
+                {% for key, value in request.GET.items %}
+                    {% if key != 'page' %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endif %}
+                {% endfor %}
+                <label for="page">Jump to:</label>
+                <input type="number" name="page" id="page" min="1" max="{{ transactions.paginator.num_pages }}" value="{{ transactions.number }}" style="width: 60px;">
+                <button type="submit">Go</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Transaction Table -->
     <table>
@@ -236,37 +269,6 @@
         </div>
     </div>
 
-    <!-- Top Right Controls -->
-    <div style="text-align: right; margin-bottom: 10px;">
-        <!-- Payments Tab -->
-        <div class="tab-bar" style="display: inline-block;">
-            <a href="{% url 'payments' %}">Payments</a>
-        </div>
-
-        <!-- Pagination Controls -->
-        <div class="pagination" style="display: inline-block; margin-left: 20px;">
-            {% if transactions.has_previous %}
-                <a href="?{% querystring page=transactions.previous_page_number %}">&laquo; Previous</a>
-            {% endif %}
-
-            <span>Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
-
-            {% if transactions.has_next %}
-                <a href="?{% querystring page=transactions.next_page_number %}">Next &raquo;</a>
-            {% endif %}
-
-            <form method="get" style="display:inline;">
-                {% for key, value in request.GET.items %}
-                    {% if key != 'page' %}
-                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                    {% endif %}
-                {% endfor %}
-                <label for="page">Jump to:</label>
-                <input type="number" name="page" id="page" min="1" max="{{ transactions.paginator.num_pages }}" value="{{ transactions.number }}" style="width: 60px;">
-                <button type="submit">Go</button>
-            </form>
-        </div>
-    </div>
 
 
     <!-- JavaScript to handle modals -->
