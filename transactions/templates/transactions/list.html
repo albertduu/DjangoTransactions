@@ -233,6 +233,9 @@
         <tr>
             <td colspan="14">No transactions found.</td>
         </tr>
+        <td>
+            <a href="{% url 'create_shipment' t.id %}">Ship</a>
+        </td>
         {% endfor %}
     </table>
 

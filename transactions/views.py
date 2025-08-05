@@ -1,13 +1,14 @@
-from django.shortcuts import render, redirect
-from .models import Transaction
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Transaction, Shipment
 from .forms import TransactionForm
-from django.db.models import F, Sum, ExpressionWrapper, FloatField
+from django.db.models import F, Sum, ExpressionWrapper, FloatField, IntegerField
 from django.utils.dateparse import parse_date
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import EmailMessage
+from django.urls import reverse
 
 def transaction_list(request):
     form = TransactionForm(request.POST or None)
@@ -106,3 +107,43 @@ def send_email(request):
         email.send()
 
         return redirect('transaction-list')
+    
+def shipments(request):
+    shipments = Shipment.objects.select_related('transaction').order_by('-shipped_at')
+
+    paginator = Paginator(shipments, 200)  # 200 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'transactions/shipments.html', {'shipments': page_obj})
+
+
+# ✅ CREATE Shipment
+def create_shipment(request, transaction_id):
+    transaction = get_object_or_404(Transaction, pk=transaction_id)
+
+    if request.method == 'POST':
+        ship_qty = int(request.POST.get('ship_qty'))
+
+        if 0 < ship_qty <= transaction.quantity:
+            transaction.quantity -= ship_qty
+            transaction.save()
+
+            Shipment.objects.create(transaction=transaction, shipped_quantity=ship_qty)
+
+        return redirect('shipments')
+
+    return render(request, 'transactions/create_shipment.html', {'transaction': transaction})
+
+
+# ✅ DELETE Shipment (restores Transaction qty)
+def delete_shipment(request, shipment_id):
+    shipment = get_object_or_404(Shipment, pk=shipment_id)
+    transaction = shipment.transaction
+
+    transaction.quantity += shipment.shipped_quantity
+    transaction.save()
+
+    shipment.delete()
+
+    return redirect('shipments')

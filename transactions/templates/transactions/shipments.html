@@ -1,0 +1,42 @@
+<h1>Shipments</h1>
+
+<!-- Tab to go back to Transactions -->
+<div style="text-align: right; margin-bottom: 10px;">
+  <a href="{% url 'transaction-list' %}">Transactions</a>
+</div>
+
+<table border="1" cellpadding="5" cellspacing="0">
+  <tr>
+    <th>Person ID</th>
+    <th>Product</th>
+    <th>Shipped Qty</th>
+    <th>Shipped At</th>
+    <th>Actions</th>
+  </tr>
+  {% for s in shipments %}
+  <tr>
+    <td>{{ s.transaction.person_id }}</td>
+    <td>{{ s.transaction.product }}</td>
+    <td>{{ s.shipped_quantity }}</td>
+    <td>{{ s.shipped_at }}</td>
+    <td>
+      <a href="{% url 'delete_shipment' s.id %}">Delete</a>
+    </td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="5">No shipments found.</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<!-- Pagination -->
+<div style="text-align: right; margin-top: 20px;">
+  {% if shipments.has_previous %}
+    <a href="?page={{ shipments.previous_page_number }}">&laquo; Previous</a>
+  {% endif %}
+  <span>Page {{ shipments.number }} of {{ shipments.paginator.num_pages }}</span>
+  {% if shipments.has_next %}
+    <a href="?page={{ shipments.next_page_number }}">Next &raquo;</a>
+  {% endif %}
+</div>

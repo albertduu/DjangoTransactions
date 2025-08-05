@@ -1,0 +1,13 @@
+<h1>Create Shipment</h1>
+
+<p><strong>Product:</strong> {{ transaction.product }}</p>
+<p><strong>Remaining Qty:</strong> {{ transaction.quantity }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    <label for="ship_qty">Quantity to Ship:</label>
+    <input type="number" name="ship_qty" min="1" max="{{ transaction.quantity }}" required>
+    <button type="submit">Ship</button>
+</form>
+
+<p><a href="{% url 'shipments' %}">Back to Shipments</a></p>
