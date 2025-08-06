@@ -113,6 +113,17 @@
         .tab-bar a:hover {
             background: #0056b3;
         }
+
+        .ship-btn {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .ship-btn:hover { background: #218838; }
     </style>
 </head>
 <body>
@@ -155,11 +166,10 @@
         <button type="submit">Filter</button>
     </form>
 
-
     <!-- Add Transaction Button -->
     <button id="openPopup">Add Transaction</button>
 
-        <!-- Top Right Controls -->
+    <!-- Top Right Controls -->
     <div style="text-align: right; margin-bottom: 10px;">
         <!-- Payments Tab -->
         <div class="tab-bar" style="display: inline-block;">
@@ -198,6 +208,7 @@
             <th>Location</th><th>Product</th><th>Quantity</th><th>Price</th><th>Payment</th>
             <th>Notes</th><th>ASIN</th><th>Paid</th><th>Trackings</th><th>Shipped</th><th>Ship</th>
         </tr>
+
         {% for t in transactions %}
         <tr>
             <td>{{ t.ts }}</td>
@@ -228,14 +239,16 @@
             <td>{{ t.paid }}</td>
             <td>{{ t.trackings }}</td>
             <td>{{ t.shipped }}</td>
+
+            <!-- Ship button -->
+            <td>
+                <a href="{% url 'create_shipment' t.id %}" class="ship-btn">Ship</a>
+            </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="14">No transactions found.</td>
+            <td colspan="15">No transactions found.</td>
         </tr>
-        <td>
-            <a href="{% url 'create_shipment' t.id %}">Ship</a>
-        </td>
         {% endfor %}
     </table>
 
@@ -271,8 +284,6 @@
             </form>
         </div>
     </div>
-
-
 
     <!-- JavaScript to handle modals -->
     <script>
