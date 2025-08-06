@@ -242,7 +242,11 @@
 
             <!-- Ship button -->
             <td>
-                <a href="{% url 'create_shipment' t.id %}" class="ship-btn">Ship</a>
+                {% if t.id %}
+                    <a href="{% url 'create_shipment' t.id %}" class="ship-btn">Ship</a>
+                {% else %}
+                    <span style="color: red;">No ID</span>
+                {% endif %}
             </td>
         </tr>
         {% empty %}
@@ -251,6 +255,7 @@
         </tr>
         {% endfor %}
     </table>
+
 
     <!-- Popup Modal Form -->
     <div id="popupForm" class="modal">
