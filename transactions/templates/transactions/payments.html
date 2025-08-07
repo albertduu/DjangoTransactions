@@ -26,6 +26,19 @@
             background: #0056b3;
         }
 
+        .filter-form {
+            margin-bottom: 20px;
+        }
+
+        .filter-form input[type="text"] {
+            padding: 6px;
+            width: 200px;
+        }
+
+        .filter-form button {
+            padding: 6px 12px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -61,6 +74,16 @@
 
     <h1>Payments Summary</h1>
 
+    <!-- Filter Form -->
+    <form method="get" class="filter-form">
+        <label for="person_id">Filter by Person ID:</label>
+        <input type="text" name="person_id" id="person_id" value="{{ request.GET.person_id }}">
+        <button type="submit">Filter</button>
+        {% if request.GET.person_id %}
+            <a href="{% url request.resolver_match.view_name %}">Clear</a>
+        {% endif %}
+    </form>
+
     <table>
         <thead>
             <tr>
@@ -71,9 +94,7 @@
         <tbody>
             {% for payment in payments %}
                 <tr>
-                    <td>
-                        <a href="?person_id={{ payment.person_id }}">{{ payment.person_id }}</a>
-                    </td>
+                    <td>{{ payment.person_id }}</td>
                     <td>{{ payment.total_remaining }}</td>
                 </tr>
             {% empty %}
@@ -87,13 +108,13 @@
     <!-- Pagination Controls -->
     <div class="pagination">
         {% if payments.has_previous %}
-            <a href="?page={{ payments.previous_page_number }}">« Previous</a>
+            <a href="?page={{ payments.previous_page_number }}{% if request.GET.person_id %}&person_id={{ request.GET.person_id }}{% endif %}">« Previous</a>
         {% endif %}
 
         <span>Page {{ payments.number }} of {{ payments.paginator.num_pages }}</span>
 
         {% if payments.has_next %}
-            <a href="?page={{ payments.next_page_number }}">Next »</a>
+            <a href="?page={{ payments.next_page_number }}{% if request.GET.person_id %}&person_id={{ request.GET.person_id }}{% endif %}">Next »</a>
         {% endif %}
 
         <form method="get">
