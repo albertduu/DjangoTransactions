@@ -57,34 +57,47 @@ def payments(request):
     person_id = request.GET.get('person_id')
 
     if person_id:
-        # If filtering a specific person — show their transactions
-        transactions = (
-            Transaction.objects
-            .filter(person_id__icontains=person_id)
-            .order_by('-ts')
-        )
+        # Get all transactions and payments for this person
+        transactions = Transaction.objects.filter(person_id__icontains=person_id)
 
-        # Paginate transactions
-        paginator = Paginator(transactions, 200)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
+        # Calculate totals
+        total_transaction = transactions.aggregate(
+            total=Sum(ExpressionWrapper(F('quantity') * F('price'), output_field=FloatField()))
+        )['total'] or 0
+
+        total_paid = transactions.aggregate(
+            total=Sum('paid')
+        )['total'] or 0
+
+        total_remaining = total_transaction - total_paid
+
+        # Sort all events (transactions + payments) chronologically
+        combined = sorted(transactions, key=attrgetter('ts'), reverse=True)
 
         return render(request, 'transactions/person_transactions.html', {
-            'transactions': page_obj,
-            'person_id': person_id
+            'transactions': combined,
+            'person_id': person_id,
+            'total_transaction': total_transaction,
+            'total_paid': total_paid,
+            'total_remaining': total_remaining,
         })
 
     else:
-        # Otherwise, show summed payments per person_id
+        # Show summarized view of all users
         payments = (
             Transaction.objects
             .values('person_id')
-            .annotate(total_remaining=Sum(F('quantity') * F('price')))
+            .annotate(
+                total_transaction=Sum(ExpressionWrapper(F('quantity') * F('price'), output_field=FloatField())),
+                total_paid=Sum('paid')
+            )
+            .annotate(
+                total_remaining=F('total_transaction') - F('total_paid')
+            )
             .order_by('-total_remaining')
         )
 
-        # ✅ Paginate summed payments too
-        paginator = Paginator(payments, 100)  # Adjust page size as needed
+        paginator = Paginator(payments, 100)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 

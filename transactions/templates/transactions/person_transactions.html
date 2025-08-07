@@ -13,6 +13,11 @@
 <body>
     <h1>Transactions for Person ID: {{ person_id }}</h1>
 
+    <h2>Summary</h2>
+    <p><strong>Total Transaction Value:</strong> ${{ total_transaction }}</p>
+    <p><strong>Total Paid:</strong> ${{ total_paid }}</p>
+    <p><strong>Total Remaining:</strong> ${{ total_remaining }}</p>
+
     <table>
         <thead>
             <tr>
@@ -20,7 +25,7 @@
                 <th>Product</th>
                 <th>Quantity</th>
                 <th>Price</th>
-                <th>Payment</th>
+                <th>Paid</th>
             </tr>
         </thead>
         <tbody>
@@ -30,7 +35,7 @@
                     <td>{{ t.product }}</td>
                     <td>{{ t.quantity }}</td>
                     <td>{{ t.price }}</td>
-                    <td>{{ t.payment }}</td>
+                    <td>{{ t.paid }}</td>
                 </tr>
             {% empty %}
                 <tr><td colspan="5">No transactions found.</td></tr>
