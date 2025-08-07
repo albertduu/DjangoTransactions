@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Transaction, Shipment
 from .forms import TransactionForm
-from django.db.models import F, Sum, ExpressionWrapper, FloatField, IntegerField
+from django.db.models import F, Sum, ExpressionWrapper, FloatField, IntegerField, DecimalField
 from django.utils.dateparse import parse_date
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
@@ -9,6 +9,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import EmailMessage
 from django.urls import reverse
+from operator import attrgetter
 
 def transaction_list(request):
     form = TransactionForm(request.POST or None)
@@ -57,21 +58,27 @@ def payments(request):
     person_id = request.GET.get('person_id')
 
     if person_id:
-        # Get all transactions and payments for this person
+        # Get all transactions for this person
         transactions = Transaction.objects.filter(person_id__icontains=person_id)
 
-        # Calculate totals
+        # Calculate totals using DecimalField for consistency
         total_transaction = transactions.aggregate(
-            total=Sum(ExpressionWrapper(F('quantity') * F('price'), output_field=FloatField()))
+            total=Sum(
+                ExpressionWrapper(
+                    F('quantity') * F('price'),
+                    output_field=DecimalField(max_digits=20, decimal_places=2)
+                )
+            )
         )['total'] or 0
 
         total_paid = transactions.aggregate(
             total=Sum('paid')
         )['total'] or 0
 
+        # Calculate remaining amount using DecimalField wrapper
         total_remaining = total_transaction - total_paid
 
-        # Sort all events (transactions + payments) chronologically
+        # Sort all transactions chronologically (descending)
         combined = sorted(transactions, key=attrgetter('ts'), reverse=True)
 
         return render(request, 'transactions/person_transactions.html', {
@@ -83,16 +90,24 @@ def payments(request):
         })
 
     else:
-        # Show summarized view of all users
+        # Summarized view of all users, ensuring DecimalField consistency
         payments = (
             Transaction.objects
             .values('person_id')
             .annotate(
-                total_transaction=Sum(ExpressionWrapper(F('quantity') * F('price'), output_field=FloatField())),
+                total_transaction=Sum(
+                    ExpressionWrapper(
+                        F('quantity') * F('price'),
+                        output_field=DecimalField(max_digits=20, decimal_places=2)
+                    )
+                ),
                 total_paid=Sum('paid')
             )
             .annotate(
-                total_remaining=F('total_transaction') - F('total_paid')
+                total_remaining=ExpressionWrapper(
+                    F('total_transaction') - F('total_paid'),
+                    output_field=DecimalField(max_digits=20, decimal_places=2)
+                )
             )
             .order_by('-total_remaining')
         )
