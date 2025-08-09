@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Transaction, Shipment
+from .models import Transaction, Shipment, Payments
 from .forms import TransactionForm
 from django.db.models import F, Sum, ExpressionWrapper, FloatField, IntegerField, DecimalField
 from django.utils.dateparse import parse_date
@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import EmailMessage
 from django.urls import reverse
 from operator import attrgetter
+from itertools import chain
 
 def transaction_list(request):
     form = TransactionForm(request.POST or None)
@@ -57,68 +58,35 @@ def transaction_list(request):
 def payments(request):
     person_id = request.GET.get('person_id')
 
+    transactions = Transaction.objects.all()
+    payments = Payments.objects.all()
+
     if person_id:
-        # Get all transactions for this person
-        transactions = Transaction.objects.filter(person_id__icontains=person_id)
+        transactions = transactions.filter(person_id=person_id)
+        payments = payments.filter(person_id=person_id)
 
-        # Calculate totals using DecimalField for consistency
-        total_transaction = transactions.aggregate(
-            total=Sum(
-                ExpressionWrapper(
-                    F('quantity') * F('price'),
-                    output_field=DecimalField(max_digits=20, decimal_places=2)
-                )
-            )
-        )['total'] or 0
-
-        total_paid = transactions.aggregate(
-            total=Sum('paid')
-        )['total'] or 0
-
-        # Calculate remaining amount using DecimalField wrapper
-        total_remaining = total_transaction - total_paid
-
-        # Sort all transactions chronologically (descending)
-        combined = sorted(transactions, key=attrgetter('ts'), reverse=True)
-
-        return render(request, 'transactions/person_transactions.html', {
-            'transactions': combined,
-            'person_id': person_id,
-            'total_transaction': total_transaction,
-            'total_paid': total_paid,
-            'total_remaining': total_remaining,
-        })
-
-    else:
-        # Summarized view of all users, ensuring DecimalField consistency
-        payments = (
-            Transaction.objects
-            .values('person_id')
-            .annotate(
-                total_transaction=Sum(
-                    ExpressionWrapper(
-                        F('quantity') * F('price'),
-                        output_field=DecimalField(max_digits=20, decimal_places=2)
-                    )
-                ),
-                total_paid=Sum('paid')
-            )
-            .annotate(
-                total_remaining=ExpressionWrapper(
-                    F('total_transaction') - F('total_paid'),
-                    output_field=DecimalField(max_digits=20, decimal_places=2)
-                )
-            )
-            .order_by('-total_remaining')
+    # Calculate remaining per transaction
+    transactions = transactions.annotate(
+        total_transaction=ExpressionWrapper(
+            F('quantity') * F('price'),
+            output_field=DecimalField()
         )
+    )
 
-        paginator = Paginator(payments, 100)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
+    # Merge into one list
+    combined = list(chain(transactions, payments))
 
-        return render(request, 'transactions/payments.html', {
-            'payments': page_obj
-        })
+    # Sort chronologically by date (adjust date field names)
+    combined.sort(key=attrgetter('date_field'))
+
+    # Paginate if needed
+    paginator = Paginator(combined, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'payments.html', {
+        'payments': page_obj
+    })
 
 
 def send_email(request):
