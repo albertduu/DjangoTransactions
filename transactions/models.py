@@ -24,6 +24,14 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.person_id or 'N/A'} - {self.product}"
     
+class Payment(models.Model):
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.transaction} - {self.amount}"
+    
 class Shipment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
     shipped_quantity = models.IntegerField()

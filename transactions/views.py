@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Transaction, Shipment, Payments
+from .models import Transaction, Shipment, Payment
 from .forms import TransactionForm
 from django.db.models import F, Sum, ExpressionWrapper, FloatField, IntegerField, DecimalField
 from django.utils.dateparse import parse_date
@@ -59,7 +59,7 @@ def payments(request):
     person_id = request.GET.get('person_id')
 
     transactions = Transaction.objects.all()
-    payments = Payments.objects.all()
+    payments = Payment.objects.all()
 
     if person_id:
         transactions = transactions.filter(person_id=person_id)
