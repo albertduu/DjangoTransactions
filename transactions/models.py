@@ -25,7 +25,11 @@ class Transaction(models.Model):
         return f"{self.person_id or 'N/A'} - {self.product}"
     
 class Payment(models.Model):
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.CASCADE,
+        related_name='payments'  # avoids name clash
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateTimeField(auto_now_add=True)
 
