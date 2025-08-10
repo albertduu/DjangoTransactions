@@ -84,7 +84,7 @@ def payments(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'payments.html', {
+    return render(request, 'transactions/payments.html', {
         'payments': page_obj
     })
 
