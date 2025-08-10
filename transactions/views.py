@@ -77,7 +77,7 @@ def payments(request):
     combined = list(chain(transactions, payments))
 
     # Sort chronologically by date (adjust date field names)
-    combined.sort(key=attrgetter('date_field'))
+    combined.sort(key=attrgetter('ts'))
 
     # Paginate if needed
     paginator = Paginator(combined, 20)
