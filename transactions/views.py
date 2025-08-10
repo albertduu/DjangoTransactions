@@ -58,53 +58,101 @@ def transaction_list(request):
 def payments(request):
     person_id = request.GET.get('person_id')
 
-    transactions = Transaction.objects.all()
-    payments = Payment.objects.all()
-
     if person_id:
-        transactions = transactions.filter(person_id=person_id)
-        # Fix: Filter payments through the related transaction field
-        payments = payments.filter(transaction__person_id=person_id)
-
-    transactions = transactions.annotate(
-        total_transaction=ExpressionWrapper(
-            F('quantity') * F('price'),
-            output_field=DecimalField()
-        )
-    )
-
-    # Add a unified 'record_type' and missing fields to avoid NaN
-    tx_list = [
-        {
-            'ts': t.ts,
-            'person_id': t.person_id,
-            'type': 'Transaction',
-            'amount': float(t.total_transaction),
-            'total_remaining': float(t.total_transaction) - float(
-                payments.filter(transaction__person_id=t.person_id).aggregate(total=Sum('amount'))['total'] or 0
+        # When filtering by specific person, show detailed history
+        transactions = Transaction.objects.filter(person_id=person_id)
+        payments = Payment.objects.filter(transaction__person_id=person_id)
+        
+        transactions = transactions.annotate(
+            total_transaction=ExpressionWrapper(
+                F('quantity') * F('price'),
+                output_field=DecimalField()
             )
-        }
-        for t in transactions
-    ]
-    pay_list = [
-        {
-            'ts': p.date,  # Note: Payment model uses 'date' field, not 'ts'
-            'person_id': p.transaction.person_id,  # Access person_id through transaction
-            'type': 'Payment',
-            'amount': float(p.amount),
-            'total_remaining': ''
-        }
-        for p in payments.select_related('transaction')  # Optimize with select_related
-    ]
+        )
 
-    combined = tx_list + pay_list
-    combined.sort(key=lambda x: x['ts'])
+        # Create detailed history for the specific person
+        tx_list = [
+            {
+                'date': t.ts,
+                'type': 'Transaction',
+                'amount': float(t.total_transaction)
+            }
+            for t in transactions
+        ]
+        
+        pay_list = [
+            {
+                'date': p.date,
+                'type': 'Payment', 
+                'amount': -float(p.amount)  # Negative for payments
+            }
+            for p in payments.select_related('transaction')
+        ]
 
-    paginator = Paginator(combined, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+        history = tx_list + pay_list
+        history.sort(key=lambda x: x['date'], reverse=True)  # Most recent first
 
-    return render(request, 'transactions/payments.html', {'payments': page_obj})
+        # Calculate total remaining for this person
+        total_transactions = sum(float(t.total_transaction) for t in transactions)
+        total_payments = sum(float(p.amount) for p in payments)
+        total_remaining = total_transactions - total_payments
+
+        # Create summary entry for pagination compatibility
+        summary_data = [{
+            'person_id': person_id,
+            'total_remaining': total_remaining
+        }]
+        
+        paginator = Paginator(summary_data, 1)
+        page_obj = paginator.get_page(1)
+
+        return render(request, 'transactions/payments.html', {
+            'payments': page_obj,
+            'history': history
+        })
+    
+    else:
+        # Show summary of all people with outstanding balances
+        from django.db.models import Q
+        
+        # Get all unique person_ids from transactions
+        person_ids = Transaction.objects.values_list('person_id', flat=True).distinct()
+        
+        summary_data = []
+        for pid in person_ids:
+            if pid:  # Skip None/empty person_ids
+                # Calculate total for this person
+                person_transactions = Transaction.objects.filter(person_id=pid)
+                person_payments = Payment.objects.filter(transaction__person_id=pid)
+                
+                person_transactions = person_transactions.annotate(
+                    total_transaction=ExpressionWrapper(
+                        F('quantity') * F('price'),
+                        output_field=DecimalField()
+                    )
+                )
+                
+                total_transactions = sum(float(t.total_transaction) for t in person_transactions)
+                total_payments = sum(float(p.amount) for p in person_payments)
+                total_remaining = total_transactions - total_payments
+                
+                # Only show people with outstanding balances
+                if total_remaining > 0:
+                    summary_data.append({
+                        'person_id': pid,
+                        'total_remaining': total_remaining
+                    })
+        
+        # Sort by total_remaining descending
+        summary_data.sort(key=lambda x: x['total_remaining'], reverse=True)
+        
+        paginator = Paginator(summary_data, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        return render(request, 'transactions/payments.html', {
+            'payments': page_obj
+        })
 
 
 def send_email(request):
