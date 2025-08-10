@@ -65,7 +65,6 @@ def payments(request):
         transactions = transactions.filter(person_id=person_id)
         payments = payments.filter(person_id=person_id)
 
-    # Calculate remaining per transaction
     transactions = transactions.annotate(
         total_transaction=ExpressionWrapper(
             F('quantity') * F('price'),
@@ -73,20 +72,38 @@ def payments(request):
         )
     )
 
-    # Merge into one list
-    combined = list(chain(transactions, payments))
+    # Add a unified 'record_type' and missing fields to avoid NaN
+    tx_list = [
+        {
+            'ts': t.ts,
+            'person_id': t.person_id,
+            'type': 'Transaction',
+            'amount': float(t.total_transaction),
+            'total_remaining': float(t.total_transaction) - float(
+                payments.filter(person_id=t.person_id).aggregate(total=Sum('amount'))['total'] or 0
+            )
+        }
+        for t in transactions
+    ]
+    pay_list = [
+        {
+            'ts': p.ts,
+            'person_id': p.person_id,
+            'type': 'Payment',
+            'amount': float(p.amount),
+            'total_remaining': ''
+        }
+        for p in payments
+    ]
 
-    # Sort chronologically by date (adjust date field names)
-    combined.sort(key=attrgetter('ts'))
+    combined = tx_list + pay_list
+    combined.sort(key=lambda x: x['ts'])
 
-    # Paginate if needed
     paginator = Paginator(combined, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'transactions/payments.html', {
-        'payments': page_obj
-    })
+    return render(request, 'transactions/payments.html', {'payments': page_obj})
 
 
 def send_email(request):
