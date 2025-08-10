@@ -63,7 +63,8 @@ def payments(request):
 
     if person_id:
         transactions = transactions.filter(person_id=person_id)
-        payments = payments.filter(person_id=person_id)
+        # Fix: Filter payments through the related transaction field
+        payments = payments.filter(transaction__person_id=person_id)
 
     transactions = transactions.annotate(
         total_transaction=ExpressionWrapper(
@@ -80,20 +81,20 @@ def payments(request):
             'type': 'Transaction',
             'amount': float(t.total_transaction),
             'total_remaining': float(t.total_transaction) - float(
-                payments.filter(person_id=t.person_id).aggregate(total=Sum('amount'))['total'] or 0
+                payments.filter(transaction__person_id=t.person_id).aggregate(total=Sum('amount'))['total'] or 0
             )
         }
         for t in transactions
     ]
     pay_list = [
         {
-            'ts': p.ts,
-            'person_id': p.person_id,
+            'ts': p.date,  # Note: Payment model uses 'date' field, not 'ts'
+            'person_id': p.transaction.person_id,  # Access person_id through transaction
             'type': 'Payment',
             'amount': float(p.amount),
             'total_remaining': ''
         }
-        for p in payments
+        for p in payments.select_related('transaction')  # Optimize with select_related
     ]
 
     combined = tx_list + pay_list
