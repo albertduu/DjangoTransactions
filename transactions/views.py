@@ -84,7 +84,7 @@ def payments(request):
             {
                 'date': p.date,
                 'type': 'Payment', 
-                'amount': -float(p.amount)  # Negative for payments
+                'amount': float(p.amount)  # Keep positive for display
             }
             for p in payments.select_related('transaction')
         ]
@@ -93,9 +93,15 @@ def payments(request):
         history.sort(key=lambda x: x['date'], reverse=True)  # Most recent first
 
         # Calculate total remaining for this person
-        total_transactions = sum(float(t.total_transaction) for t in transactions)
-        total_payments = sum(float(p.amount) for p in payments)
-        total_remaining = total_transactions - total_payments
+        total_transactions = transactions.aggregate(
+            total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+        )['total'] or 0
+        
+        total_payments = payments.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+        
+        total_remaining = float(total_transactions) - float(total_payments)
 
         # Create summary entry for pagination compatibility
         summary_data = [{
@@ -125,16 +131,15 @@ def payments(request):
                 person_transactions = Transaction.objects.filter(person_id=pid)
                 person_payments = Payment.objects.filter(transaction__person_id=pid)
                 
-                person_transactions = person_transactions.annotate(
-                    total_transaction=ExpressionWrapper(
-                        F('quantity') * F('price'),
-                        output_field=DecimalField()
-                    )
-                )
+                total_transactions = person_transactions.aggregate(
+                    total=Sum(F('quantity') * F('price'), output_field=DecimalField())
+                )['total'] or 0
                 
-                total_transactions = sum(float(t.total_transaction) for t in person_transactions)
-                total_payments = sum(float(p.amount) for p in person_payments)
-                total_remaining = total_transactions - total_payments
+                total_payments = person_payments.aggregate(
+                    total=Sum('amount')
+                )['total'] or 0
+                
+                total_remaining = float(total_transactions) - float(total_payments)
                 
                 # Only show people with outstanding balances
                 if total_remaining > 0:
