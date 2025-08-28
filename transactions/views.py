@@ -127,7 +127,7 @@ def payments(request):
                     'total_remaining': Decimal(total_remaining)
                 })
 
-    return render(request, 'payments.html', {
+    return render(request, 'transactions/payments.html', {
         'entries': entries,
         'all_balances': all_balances,
         'person_id': person_id
