@@ -175,20 +175,31 @@ def shipments(request):
     return render(request, 'transactions/shipments.html', {'shipments': page_obj})
 
 
-# ✅ CREATE Shipment
+def shipments(request):
+    all_shipments = Shipment.objects.select_related('transaction').order_by('-shipped_at')
+    return render(request, 'shipments.html', {'shipments': all_shipments})
+
+
+# ✅ CREATE Shipment (subtracts from Transaction qty)
 def create_shipment(request, transaction_id):
     transaction = get_object_or_404(Transaction, pk=transaction_id)
 
     if request.method == 'POST':
-        ship_qty = int(request.POST.get('ship_qty'))
+        ship_qty = int(request.POST.get('ship_qty', 0))
 
+        # Ensure valid quantity
         if 0 < ship_qty <= transaction.quantity:
+            # Subtract from Transaction
             transaction.quantity -= ship_qty
             transaction.save()
 
-            Shipment.objects.create(transaction=transaction, shipped_quantity=ship_qty)
+            # Create Shipment record
+            Shipment.objects.create(
+                transaction=transaction,
+                shipped_quantity=ship_qty
+            )
 
-        return redirect('shipments')
+        return redirect('shipments')  # go to shipments page
 
     return render(request, 'transactions/create_shipment.html', {'transaction': transaction})
 
@@ -198,9 +209,11 @@ def delete_shipment(request, shipment_id):
     shipment = get_object_or_404(Shipment, pk=shipment_id)
     transaction = shipment.transaction
 
+    # Restore quantity back to Transaction
     transaction.quantity += shipment.shipped_quantity
     transaction.save()
 
+    # Delete Shipment
     shipment.delete()
 
     return redirect('shipments')

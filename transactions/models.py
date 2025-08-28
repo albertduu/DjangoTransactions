@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Transaction(models.Model):
     ts = models.DateTimeField()
@@ -24,23 +25,15 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.person_id or 'N/A'} - {self.product}"
     
-class Payment(models.Model):
-    id = models.AutoField(primary_key=True)
-    ts = models.DateTimeField()  # corresponds to 'ts' column
-    t_person_id = models.CharField(max_length=255)  # person ID string
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    notes = models.TextField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'payments'  # explicitly map to your existing table
-
-    def __str__(self):
-        return f"{self.t_person_id} - {self.amount}"
     
 class Shipment(models.Model):
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    transaction = models.ForeignKey(
+        'Transaction', 
+        on_delete=models.CASCADE, 
+        related_name='shipments'
+    )
     shipped_quantity = models.IntegerField()
-    shipped_at = models.DateTimeField(auto_now_add=True)
+    shipped_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"Shipment of {self.shipped_quantity} for {self.transaction}"
+        return f"Shipment of {self.shipped_quantity} for Transaction {self.transaction.id}"
