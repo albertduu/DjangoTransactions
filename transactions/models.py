@@ -25,16 +25,13 @@ class Transaction(models.Model):
         return f"{self.person_id or 'N/A'} - {self.product}"
     
 class Payment(models.Model):
-    transaction = models.ForeignKey(
-        Transaction,
-        on_delete=models.CASCADE,
-        related_name='payments'  # avoids name clash
-    )
+    person_id = models.CharField(max_length=255)  # <-- add this
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateTimeField(auto_now_add=True)
+    notes = models.CharField(max_length=255, blank=True, null=True)
+    ts = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.transaction} - {self.amount}"
+        return f"{self.person_id} - {self.amount}"
     
 class Shipment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)

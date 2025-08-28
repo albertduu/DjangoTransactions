@@ -32,8 +32,8 @@
         .pagination { text-align: right; margin: 20px 0; }
         .pagination form { display: inline-block; margin-left: 20px; }
         .section-title { margin-top: 40px; font-size: 1.2em; }
-        .payment-row { color: #dc3545; }
-        .transaction-row { color: #28a745; }
+        .payment-row { color: #dc3545; }   /* red */
+        .transaction-row { color: #28a745; } /* green */
         .total-remaining { font-weight: bold; }
     </style>
 </head>
@@ -124,28 +124,50 @@
                     <th>Date</th>
                     <th>Type</th>
                     <th>Amount</th>
+                    <th>Running Balance</th>
                 </tr>
             </thead>
             <tbody>
-                {% for record in history %}
-                    <tr class="{% if record.type == 'Payment' %}payment-row{% else %}transaction-row{% endif %}">
-                        <td>{{ record.date|date:"M d, Y H:i" }}</td>
-                        <td>{{ record.type }}</td>
+                {% for record in ledger %}
+                    <tr class="{% if record.amount < 0 %}payment-row{% else %}transaction-row{% endif %}">
+                        <td>{{ record.ts|date:"M d, Y H:i" }}</td>
+                        <td>{% if record.amount < 0 %}Payment{% else %}Transaction{% endif %}</td>
                         <td>
-                            {% if record.type == 'Payment' %}
-                                -${{ record.amount|floatformat:2 }}
+                            {% if record.amount < 0 %}
+                                -${{ record.amount|floatformat:2|cut:"-" }}
                             {% else %}
                                 +${{ record.amount|floatformat:2 }}
                             {% endif %}
                         </td>
+                        <td>${{ record.balance|floatformat:2 }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="3">No records found for this person.</td>
+                        <td colspan="4">No records found for this person.</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- Pagination Controls for Detailed History -->
+        <div class="pagination">
+            {% if ledger.has_previous %}
+                <a href="?person_id={{ request.GET.person_id }}&page={{ ledger.previous_page_number }}">« Previous</a>
+            {% endif %}
+
+            <span>Page {{ ledger.number }} of {{ ledger.paginator.num_pages }}</span>
+
+            {% if ledger.has_next %}
+                <a href="?person_id={{ request.GET.person_id }}&page={{ ledger.next_page_number }}">Next »</a>
+            {% endif %}
+
+            <form method="get">
+                <input type="hidden" name="person_id" value="{{ request.GET.person_id }}">
+                Jump to:
+                <input type="number" name="page" min="1" max="{{ ledger.paginator.num_pages }}" value="{{ ledger.number }}">
+                <button type="submit">Go</button>
+            </form>
+        </div>
     {% endif %}
 
 </body>
