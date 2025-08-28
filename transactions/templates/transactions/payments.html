@@ -33,6 +33,21 @@
         .payment-row { color: #dc3545; }   /* red for payments */
         .transaction-row { color: #28a745; } /* green for transactions */
         .total-remaining { font-weight: bold; }
+        .pagination {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .pagination a {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 0 5px;
+            background: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .pagination a:hover { background: #0056b3; }
+        .pagination span { margin: 0 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -74,6 +89,20 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Pagination for summary table -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+    </div>
+
 {% else %}
     <!-- Detailed view for single person -->
     <h2 class="section-title">Transaction & Payment History for {{ request.GET.person_id }}</h2>
@@ -114,6 +143,19 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Pagination for individual ledger -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?person_id={{ person_id }}&page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?person_id={{ person_id }}&page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+    </div>
 {% endif %}
 
 </body>

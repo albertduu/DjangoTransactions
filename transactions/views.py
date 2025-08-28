@@ -57,13 +57,21 @@ def transaction_list(request):
         'end_date': end_date,
     })
 
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from django.db import connection
+from decimal import Decimal
+
 def payments(request):
     person_id = request.GET.get('person_id', '').strip()
+    page_number = request.GET.get('page', 1)
+    per_page = 100
+
     entries = []
     all_balances = []
 
     if person_id:
-        # --- Custom ledger query for single person (chronological) ---
+        # --- Single-person ledger (chronological) ---
         with connection.cursor() as cursor:
             cursor.execute("SET @my_var:=0;")
             cursor.execute("""
@@ -85,7 +93,6 @@ def payments(request):
                     ORDER BY ts, id
                 ) a
                 ORDER BY ts ASC, id ASC
-                LIMIT 0, 100
             """, [person_id, person_id])
 
             columns = [col[0] for col in cursor.description]
@@ -98,10 +105,13 @@ def payments(request):
                 entry['commutative_sum'] = Decimal(entry.get('commutative_sum') or 0)
                 entries.append(entry)
 
+        # Paginate entries
+        paginator = Paginator(entries, per_page)
+        page_obj = paginator.get_page(page_number)
+
     else:
-        # --- Summary for all persons (sort greatest to least) ---
+        # --- Summary for all persons (sorted greatest to least) ---
         with connection.cursor() as cursor:
-            # Get all unique person_ids
             cursor.execute("""
                 SELECT DISTINCT person_id FROM transactions
                 UNION
@@ -109,7 +119,6 @@ def payments(request):
             """)
             persons = [row[0] for row in cursor.fetchall()]
 
-            # Compute balance per person
             for pid in persons:
                 cursor.execute("""
                     SELECT 
@@ -126,14 +135,20 @@ def payments(request):
                     'total_remaining': Decimal(total_remaining)
                 })
 
-            # Sort from greatest to least balance
-            all_balances.sort(key=lambda x: x['total_remaining'], reverse=True)
+        # Sort greatest to least
+        all_balances.sort(key=lambda x: x['total_remaining'], reverse=True)
+
+        # Paginate all_balances
+        paginator = Paginator(all_balances, per_page)
+        page_obj = paginator.get_page(page_number)
 
     return render(request, 'transactions/payments.html', {
-        'entries': entries,
-        'all_balances': all_balances,
-        'person_id': person_id
+        'entries': page_obj.object_list if person_id else [],
+        'all_balances': page_obj.object_list if not person_id else [],
+        'person_id': person_id,
+        'page_obj': page_obj
     })
+
 
 def send_email(request):
     if request.method == 'POST':
