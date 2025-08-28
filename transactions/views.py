@@ -98,6 +98,8 @@ def payments(request):
                 entry['total'] = Decimal(entry.get('total') or 0)
                 entry['commutative_sum'] = Decimal(entry.get('commutative_sum') or 0)
                 entries.append(entry)
+        
+        entries.sort(key=lambda x: x['total'], reverse=True)
 
     else:
         # --- Summary for all persons ---
