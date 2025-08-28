@@ -58,43 +58,81 @@ def transaction_list(request):
 def payments(request):
     person_id = request.GET.get('person_id')
 
-    # Transactions queryset
-    transactions = Transaction.objects.all().annotate(
-        amount=ExpressionWrapper(F('quantity') * F('price'), output_field=DecimalField())
-    ).values('ts', 'id', 'amount').annotate(type=F('product'))  # product goes into "type"/notes
-
-    # Payments queryset (negative amounts)
-    payments_qs = Payment.objects.all().annotate(
-        amount=ExpressionWrapper(-F('amount'), output_field=DecimalField())
-    ).values('ts', 'id', 'amount').annotate(type=F('notes'))
-
     if person_id:
-        transactions = transactions.filter(person_id=person_id)
-        payments_qs = payments_qs.filter(person_id=person_id)
+        transactions = Transaction.objects.filter(person_id__icontains=person_id).annotate(
+            total=ExpressionWrapper(
+                F('quantity') * F('price'),
+                output_field=DecimalField(max_digits=10, decimal_places=2)
+            )
+        ).values(
+            'id', 'ts', 'product__product', 'quantity', 'price', 'total'
+        )
 
-    # Merge into one timeline
-    ledger = list(chain(transactions, payments_qs))
-    ledger.sort(key=lambda x: (x['ts'], x['id']))
+        # Payments: total = -amount
+        payments_qs = Payment.objects.filter(t_person_id__icontains=person_id).annotate(
+            quantity=F('amount') * 0,   # always 0
+            price=F('amount') * 0,      # always 0
+            total=ExpressionWrapper(-F('amount'), output_field=DecimalField(max_digits=10, decimal_places=2))
+        ).values(
+            'id', 'ts', 'notes', 'quantity', 'price', 'total'
+        )
 
-    # Compute running balance
-    balance = 0
-    for entry in ledger:
-        balance += entry['amount']
-        entry['balance'] = balance
+        # Normalize keys
+        tx_list = [
+            {
+                'id': t['id'],
+                'ts': t['ts'],
+                'notes': t['product__product'],
+                'quantity': t['quantity'],
+                'price': t['price'],
+                'total': t['total'],
+            }
+            for t in transactions
+        ]
 
-    # Reverse order for display (most recent first)
-    ledger.sort(key=lambda x: (x['ts'], x['id']), reverse=True)
+        pay_list = [
+            {
+                'id': p['id'],
+                'ts': p['ts'],
+                'notes': p['notes'],
+                'quantity': p['quantity'],
+                'price': p['price'],
+                'total': p['total'],
+            }
+            for p in payments_qs
+        ]
 
-    # Pagination
-    paginator = Paginator(ledger, 50)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+        # Merge and sort by date/id
+        combined = sorted(chain(tx_list, pay_list), key=lambda x: (x['ts'], x['id']))
 
-    return render(request, 'transactions/payments.html', {
-        'ledger': page_obj,
-        'person_id': person_id,
-    })
+        # Running balance
+        running_sum = 0
+        for row in combined:
+            running_sum += row['total']
+            row['commutative_sum'] = running_sum
 
+        return render(request, 'payments.html', {'entries': combined})
+
+    else:
+        tx_totals = Transaction.objects.values('person_id').annotate(
+            total=Sum(ExpressionWrapper(F('quantity')*F('price'), output_field=DecimalField(max_digits=10, decimal_places=2)))
+        )
+
+        # Payments per person
+        pay_totals = Payment.objects.values('t_person_id').annotate(
+            total=Sum('amount')
+        )
+
+        # Merge totals
+        balance_dict = {}
+        for t in tx_totals:
+            balance_dict[t['person_id']] = t['total']
+        for p in pay_totals:
+            balance_dict[p['t_person_id']] = balance_dict.get(p['t_person_id'], 0) - p['total']
+
+        all_balances = [{'person_id': k, 'total_remaining': v} for k, v in balance_dict.items()]
+
+        return render(request, 'payments.html', {'all_balances': all_balances})
 
 def send_email(request):
     if request.method == 'POST':

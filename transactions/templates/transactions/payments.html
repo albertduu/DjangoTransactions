@@ -29,146 +29,92 @@
             text-align: left;
         }
         th { background: #f0f0f0; }
-        .pagination { text-align: right; margin: 20px 0; }
-        .pagination form { display: inline-block; margin-left: 20px; }
         .section-title { margin-top: 40px; font-size: 1.2em; }
-        .payment-row { color: #dc3545; }   /* red */
-        .transaction-row { color: #28a745; } /* green */
+        .payment-row { color: #dc3545; }   /* red for payments */
+        .transaction-row { color: #28a745; } /* green for transactions */
         .total-remaining { font-weight: bold; }
     </style>
 </head>
 <body>
-    <!-- Tab Bar -->
-    <div class="tab-bar">
-        <a href="{% url 'transaction-list' %}">Transactions</a>
-    </div>
 
-    <h1>Payments Summary</h1>
+<div class="tab-bar">
+    <a href="{% url 'transaction-list' %}">Transactions</a>
+</div>
 
-    <!-- Filter Form -->
-    <form method="get" class="filter-form">
-        <label for="person_id">Filter by Person ID:</label>
-        <input type="text" name="person_id" id="person_id" value="{{ request.GET.person_id }}">
-        <button type="submit">Filter</button>
-        {% if request.GET.person_id %}
-            <a href="{% url 'payments' %}">Clear</a>
-        {% endif %}
-    </form>
+<h1>Payments Summary</h1>
 
-    {% if not request.GET.person_id %}
-        <!-- Summary Table for All People -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Person ID</th>
-                    <th>Total Remaining</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for summary in payments %}
-                    <tr>
-                        <td><a href="?person_id={{ summary.person_id }}">{{ summary.person_id }}</a></td>
-                        <td class="total-remaining">${{ summary.total_remaining|floatformat:2 }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="2">No outstanding balances found.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Pagination Controls for Summary -->
-        <div class="pagination">
-            {% if payments.has_previous %}
-                <a href="?page={{ payments.previous_page_number }}">« Previous</a>
-            {% endif %}
-
-            <span>Page {{ payments.number }} of {{ payments.paginator.num_pages }}</span>
-
-            {% if payments.has_next %}
-                <a href="?page={{ payments.next_page_number }}">Next »</a>
-            {% endif %}
-
-            <form method="get">
-                Jump to:
-                <input type="number" name="page" min="1" max="{{ payments.paginator.num_pages }}" value="{{ payments.number }}">
-                <button type="submit">Go</button>
-            </form>
-        </div>
-
-    {% else %}
-        <!-- Single Person Summary -->
-        {% for summary in payments %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Person ID</th>
-                        <th>Total Remaining</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ summary.person_id }}</td>
-                        <td class="total-remaining">${{ summary.total_remaining|floatformat:2 }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        {% endfor %}
-
-        <!-- Detailed History -->
-        <h2 class="section-title">Transaction & Payment History for {{ request.GET.person_id }}</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Running Balance</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for record in ledger %}
-                    <tr class="{% if record.amount < 0 %}payment-row{% else %}transaction-row{% endif %}">
-                        <td>{{ record.ts|date:"M d, Y H:i" }}</td>
-                        <td>{% if record.amount < 0 %}Payment{% else %}Transaction{% endif %}</td>
-                        <td>
-                            {% if record.amount < 0 %}
-                                -${{ record.amount|floatformat:2|cut:"-" }}
-                            {% else %}
-                                +${{ record.amount|floatformat:2 }}
-                            {% endif %}
-                        </td>
-                        <td>${{ record.balance|floatformat:2 }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="4">No records found for this person.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Pagination Controls for Detailed History -->
-        <div class="pagination">
-            {% if ledger.has_previous %}
-                <a href="?person_id={{ request.GET.person_id }}&page={{ ledger.previous_page_number }}">« Previous</a>
-            {% endif %}
-
-            <span>Page {{ ledger.number }} of {{ ledger.paginator.num_pages }}</span>
-
-            {% if ledger.has_next %}
-                <a href="?person_id={{ request.GET.person_id }}&page={{ ledger.next_page_number }}">Next »</a>
-            {% endif %}
-
-            <form method="get">
-                <input type="hidden" name="person_id" value="{{ request.GET.person_id }}">
-                Jump to:
-                <input type="number" name="page" min="1" max="{{ ledger.paginator.num_pages }}" value="{{ ledger.number }}">
-                <button type="submit">Go</button>
-            </form>
-        </div>
+<form method="get" class="filter-form">
+    <label for="person_id">Filter by Person ID:</label>
+    <input type="text" name="person_id" id="person_id" value="{{ request.GET.person_id }}">
+    <button type="submit">Filter</button>
+    {% if request.GET.person_id %}
+        <a href="{% url 'payments' %}">Clear</a>
     {% endif %}
+</form>
+
+{% if not request.GET.person_id %}
+    <!-- All people summary -->
+    <table>
+        <thead>
+            <tr>
+                <th>Person ID</th>
+                <th>Total Remaining</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for person in all_balances %}
+                <tr>
+                    <td><a href="?person_id={{ person.person_id }}">{{ person.person_id }}</a></td>
+                    <td class="total-remaining">${{ person.total_remaining|floatformat:2 }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2">No balances found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <!-- Detailed view for single person -->
+    <h2 class="section-title">Transaction & Payment History for {{ request.GET.person_id }}</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Notes / Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Amount</th>
+                <th>Running Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in entries %}
+                <tr class="{% if row.total < 0 %}payment-row{% else %}transaction-row{% endif %}">
+                    <td>{{ row.ts|date:"M d, Y H:i" }}</td>
+                    <td>{% if row.total < 0 %}Payment{% else %}Transaction{% endif %}</td>
+                    <td>{{ row.notes }}</td>
+                    <td>{{ row.quantity }}</td>
+                    <td>${{ row.price|floatformat:2 }}</td>
+                    <td>
+                        {% if row.total < 0 %}
+                            -${{ row.total|floatformat:2|cut:"-" }}
+                        {% else %}
+                            +${{ row.total|floatformat:2 }}
+                        {% endif %}
+                    </td>
+                    <td>${{ row.commutative_sum|floatformat:2 }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7">No records found for this person.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
 
 </body>
 </html>

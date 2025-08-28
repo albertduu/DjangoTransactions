@@ -25,13 +25,17 @@ class Transaction(models.Model):
         return f"{self.person_id or 'N/A'} - {self.product}"
     
 class Payment(models.Model):
-    person_id = models.CharField(max_length=255)  # <-- add this
+    id = models.AutoField(primary_key=True)
+    ts = models.DateTimeField()  # corresponds to 'ts' column
+    t_person_id = models.CharField(max_length=255)  # person ID string
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    notes = models.CharField(max_length=255, blank=True, null=True)
-    ts = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'payments'  # explicitly map to your existing table
 
     def __str__(self):
-        return f"{self.person_id} - {self.amount}"
+        return f"{self.t_person_id} - {self.amount}"
     
 class Shipment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
