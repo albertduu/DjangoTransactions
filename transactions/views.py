@@ -63,7 +63,7 @@ def payments(request):
     all_balances = []
 
     if person_id:
-        # --- Custom ledger query for single person ---
+        # --- Custom ledger query for single person (chronological) ---
         with connection.cursor() as cursor:
             cursor.execute("SET @my_var:=0;")
             cursor.execute("""
@@ -84,7 +84,7 @@ def payments(request):
                         WHERE p.t_person_id=%s)
                     ORDER BY ts, id
                 ) a
-                ORDER BY ts DESC, id DESC
+                ORDER BY ts ASC, id ASC
                 LIMIT 0, 100
             """, [person_id, person_id])
 
@@ -92,19 +92,16 @@ def payments(request):
             rows = cursor.fetchall()
             for row in rows:
                 entry = dict(zip(columns, row))
-                # Ensure numeric fields are Decimal
                 entry['quantity'] = Decimal(entry.get('quantity') or 0)
                 entry['price'] = Decimal(entry.get('price') or 0)
                 entry['total'] = Decimal(entry.get('total') or 0)
                 entry['commutative_sum'] = Decimal(entry.get('commutative_sum') or 0)
                 entries.append(entry)
-        
-        entries.sort(key=lambda x: x['total'], reverse=True)
 
     else:
-        # --- Summary for all persons ---
+        # --- Summary for all persons (sort greatest to least) ---
         with connection.cursor() as cursor:
-            # Get all unique person_ids from transactions and payments
+            # Get all unique person_ids
             cursor.execute("""
                 SELECT DISTINCT person_id FROM transactions
                 UNION
@@ -128,6 +125,9 @@ def payments(request):
                     'person_id': pid,
                     'total_remaining': Decimal(total_remaining)
                 })
+
+            # Sort from greatest to least balance
+            all_balances.sort(key=lambda x: x['total_remaining'], reverse=True)
 
     return render(request, 'transactions/payments.html', {
         'entries': entries,
