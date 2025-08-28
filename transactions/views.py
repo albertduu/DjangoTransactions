@@ -11,6 +11,8 @@ from django.core.mail import EmailMessage
 from django.urls import reverse
 from operator import attrgetter
 from itertools import chain
+from django.db import connection
+from decimal import Decimal
 
 def transaction_list(request):
     form = TransactionForm(request.POST or None)
@@ -56,83 +58,80 @@ def transaction_list(request):
     })
 
 def payments(request):
-    person_id = request.GET.get('person_id')
+    person_id = request.GET.get('person_id', '').strip()
+    entries = []
+    all_balances = []
 
     if person_id:
-        transactions = Transaction.objects.filter(person_id__icontains=person_id).annotate(
-            total=ExpressionWrapper(
-                F('quantity') * F('price'),
-                output_field=DecimalField(max_digits=10, decimal_places=2)
-            )
-        ).values(
-            'id', 'ts', 'product__product', 'quantity', 'price', 'total'
-        )
+        # --- Custom ledger query for single person ---
+        with connection.cursor() as cursor:
+            cursor.execute("SET @my_var:=0;")
+            cursor.execute("""
+                SELECT id, ts, notes, quantity, price, total, @my_var:=@my_var+a.total AS commutative_sum
+                FROM (
+                    (SELECT
+                        t.id AS id, t.ts AS ts, p.product AS notes, t.quantity AS quantity, t.price AS price,
+                        t.quantity*t.price AS total
+                        FROM transactions t
+                        LEFT JOIN transactions_product tp ON t.id=tp.t_id
+                        LEFT JOIN products p ON tp.p_asin=p.asin
+                        WHERE t.person_id=%s)
+                    UNION ALL
+                    (SELECT
+                        p.id AS id, p.ts AS ts, p.notes AS notes, 0 AS quantity, 0 AS price,
+                        -p.amount AS total
+                        FROM payments p
+                        WHERE p.t_person_id=%s)
+                    ORDER BY ts, id
+                ) a
+                ORDER BY ts DESC, id DESC
+                LIMIT 0, 100
+            """, [person_id, person_id])
 
-        # Payments: total = -amount
-        payments_qs = Payment.objects.filter(t_person_id__icontains=person_id).annotate(
-            quantity=F('amount') * 0,   # always 0
-            price=F('amount') * 0,      # always 0
-            total=ExpressionWrapper(-F('amount'), output_field=DecimalField(max_digits=10, decimal_places=2))
-        ).values(
-            'id', 'ts', 'notes', 'quantity', 'price', 'total'
-        )
-
-        # Normalize keys
-        tx_list = [
-            {
-                'id': t['id'],
-                'ts': t['ts'],
-                'notes': t['product__product'],
-                'quantity': t['quantity'],
-                'price': t['price'],
-                'total': t['total'],
-            }
-            for t in transactions
-        ]
-
-        pay_list = [
-            {
-                'id': p['id'],
-                'ts': p['ts'],
-                'notes': p['notes'],
-                'quantity': p['quantity'],
-                'price': p['price'],
-                'total': p['total'],
-            }
-            for p in payments_qs
-        ]
-
-        # Merge and sort by date/id
-        combined = sorted(chain(tx_list, pay_list), key=lambda x: (x['ts'], x['id']))
-
-        # Running balance
-        running_sum = 0
-        for row in combined:
-            running_sum += row['total']
-            row['commutative_sum'] = running_sum
-
-        return render(request, 'payments.html', {'entries': combined})
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+            for row in rows:
+                entry = dict(zip(columns, row))
+                # Ensure numeric fields are Decimal
+                entry['quantity'] = Decimal(entry.get('quantity') or 0)
+                entry['price'] = Decimal(entry.get('price') or 0)
+                entry['total'] = Decimal(entry.get('total') or 0)
+                entry['commutative_sum'] = Decimal(entry.get('commutative_sum') or 0)
+                entries.append(entry)
 
     else:
-        tx_totals = Transaction.objects.values('person_id').annotate(
-            total=Sum(ExpressionWrapper(F('quantity')*F('price'), output_field=DecimalField(max_digits=10, decimal_places=2)))
-        )
+        # --- Summary for all persons ---
+        with connection.cursor() as cursor:
+            # Get all unique person_ids from transactions and payments
+            cursor.execute("""
+                SELECT DISTINCT person_id FROM transactions
+                UNION
+                SELECT DISTINCT t_person_id FROM payments
+            """)
+            persons = [row[0] for row in cursor.fetchall()]
 
-        # Payments per person
-        pay_totals = Payment.objects.values('t_person_id').annotate(
-            total=Sum('amount')
-        )
+            # Compute balance per person
+            for pid in persons:
+                cursor.execute("""
+                    SELECT 
+                        COALESCE(SUM(t.quantity*t.price),0) - COALESCE(SUM(p.amount),0) AS total_remaining
+                    FROM 
+                        (SELECT quantity, price FROM transactions WHERE person_id=%s) t
+                        LEFT JOIN
+                        (SELECT amount FROM payments WHERE t_person_id=%s) p
+                    ON 1=1
+                """, [pid, pid])
+                total_remaining = cursor.fetchone()[0] or 0
+                all_balances.append({
+                    'person_id': pid,
+                    'total_remaining': Decimal(total_remaining)
+                })
 
-        # Merge totals
-        balance_dict = {}
-        for t in tx_totals:
-            balance_dict[t['person_id']] = t['total']
-        for p in pay_totals:
-            balance_dict[p['t_person_id']] = balance_dict.get(p['t_person_id'], 0) - p['total']
-
-        all_balances = [{'person_id': k, 'total_remaining': v} for k, v in balance_dict.items()]
-
-        return render(request, 'payments.html', {'all_balances': all_balances})
+    return render(request, 'payments.html', {
+        'entries': entries,
+        'all_balances': all_balances,
+        'person_id': person_id
+    })
 
 def send_email(request):
     if request.method == 'POST':
