@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Transaction, Shipment, Payment
+from .models import Transaction, Shipment
 from .forms import TransactionForm
 from django.db.models import F, Sum, ExpressionWrapper, FloatField, IntegerField, DecimalField
 from django.utils.dateparse import parse_date
